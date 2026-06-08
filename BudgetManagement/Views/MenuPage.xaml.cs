@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection; // App.Services を使うために追加
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -15,15 +14,12 @@ namespace BudgetManagement.Views
         }
 
         /// <summary>
-        /// 【新規追加】Login.xaml.cs から引っ越してきた遷移ロジック
-        /// メニューのボタンが押されたときに、元々の機能画面（UserCsvImport）を起動します。
+        /// ユーザーCSVインポートの代わりとして、既存の SampleView（ユーザー一覧）を起動します
         /// </summary>
         private void UserCsvImport_Click(object sender, RoutedEventArgs e)
         {
-            // 元々 Login.xaml.cs に書いてあったコードをそのままここで実行します
-            this.NavigationService.Navigate(
-                App.Services.GetService<UserCsvImport>()
-            );
+            // DIコンテナの登録状況に左右されないよう、シンプルに新しくインスタンスを生成して遷移します
+            this.NavigationService.Navigate(new SampleView());
         }
 
         private void TabBudget_Click(object sender, MouseButtonEventArgs e)

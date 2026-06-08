@@ -1,10 +1,9 @@
-﻿<Page x:Class="WpfApp2.Views.Login"
+﻿<Page x:Class="BudgetManagement.Views.Login"
       xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
       xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
       Background="#EEF2FF">
 
     <Grid>
-        <!-- カード -->
         <Border Width="360"
                 Padding="28"
                 CornerRadius="20"
@@ -27,7 +26,6 @@
                    Margin="0,0,0,4"/>
 
 
-                <!-- ユーザーID -->
                 <TextBlock Text="ユーザーID"
                            FontSize="13"
                            Foreground="#6B7280"
@@ -42,13 +40,11 @@
                             <Setter Property="BorderBrush" Value="#D1D5DB"/>
                             <Style.Triggers>
 
-                                <!-- フォーカス -->
                                 <DataTrigger Binding="{Binding IsKeyboardFocused, RelativeSource={RelativeSource FindAncestor, AncestorType=TextBox}}" Value="True">
                                     <Setter Property="BorderBrush" Value="#6366F1"/>
                                     <Setter Property="BorderThickness" Value="2"/>
                                 </DataTrigger>
 
-                                <!-- ホバー -->
                                 <Trigger Property="IsMouseOver" Value="True">
                                     <Setter Property="BorderBrush" Value="#A5B4FC"/>
                                 </Trigger>
@@ -64,7 +60,6 @@
                              Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
                 </Border>
 
-                <!-- パスワード -->
                 <TextBlock Text="パスワード"
                            FontSize="13"
                            Foreground="#6B7280"
@@ -92,14 +87,13 @@
                         </Style>
                     </Border.Style>
 
-                    <PasswordBox x:Name="PasswordBox"
+                    <PasswordBox x:Name="LoginPassword"
                                  BorderThickness="0"
                                  Background="Transparent"
                                  Padding="12,8"
                                  FontSize="15"/>
                 </Border>
 
-                <!-- ボタン -->
                 <Button Content="ログイン"
                         Margin="0,24,0,0"
                         Height="45"
