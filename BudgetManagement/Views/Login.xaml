@@ -101,8 +101,7 @@
                         Foreground="White"
                         BorderBrush="Transparent"
                         Cursor="Hand"
-                        Click="Login_Click"
-                        Command="{Binding LoginCommand}">
+                        Click="Login_Click">
 
                     <Button.Background>
                         <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">

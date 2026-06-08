@@ -1,8 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 using System.Windows.Controls;
-// 【修正】以下の1行だけにしてください（末尾の s が重要です）
-using BudgetManagement.ViewModels; 
+using BudgetManagement.ViewModels;
 
 namespace BudgetManagement.Views
 {
@@ -21,14 +20,17 @@ namespace BudgetManagement.Views
             }
         }
 
-        private void Login_Click(object sender, RoutedEventArgs e)
+        // ⭕ async を追加して非同期メソッドに変更
+        private async void Login_Click(object sender, RoutedEventArgs e)
         {
             var vm = (LoginViewModel)DataContext;
             if (vm != null)
             {
+                // 1. パスワードを確実にViewModelへ格納
                 vm.Password = LoginPassword.Password;
-                // Commandがバインドされている場合は直接Executeを呼ばなくても動作しますが
-                // もし動かない場合はここで vm.LoginCommand.Execute(null); を呼んでください
+                
+                // 2. ログイン処理を直接安全に呼び出す
+                await vm.LoginAsync();
             }
         }
 

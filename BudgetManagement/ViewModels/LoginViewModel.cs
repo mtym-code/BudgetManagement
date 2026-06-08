@@ -1,6 +1,5 @@
 ﻿using BudgetManagement.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 using System;
 using System.Threading.Tasks;
 
@@ -17,15 +16,13 @@ namespace BudgetManagement.ViewModels
         [ObservableProperty]
         private string password;
 
-        // 【追加】UserService をDIコンテナから受け取る
         public LoginViewModel(UserService userService)
         {
             _userService = userService;
         }
 
-        // 非同期コマンドに変更
-        [RelayCommand]
-        private async Task LoginAsync()
+        // ⭕ public メソッドに変更し、Viewから直接呼べるようにしました
+        public async Task LoginAsync()
         {
             if (string.IsNullOrEmpty(Username) || string.IsNullOrEmpty(Password))
             {
@@ -35,22 +32,24 @@ namespace BudgetManagement.ViewModels
 
             try
             {
-                // DBに接続して認証処理を実行
+                // DB認証を実行
                 var isAuthenticated = await _userService.AuthenticateAsync(Username, Password);
 
                 if (isAuthenticated)
                 {
-                    // 認証成功時、メニュー画面へ遷移
+                    // 成功時はメニュー画面へ
                     LoginSucceeded?.Invoke();
                 }
                 else
                 {
-                    System.Windows.MessageBox.Show("ユーザーIDまたはパスワードが間違っています。", "認証失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    // ⭕ エラーメッセージをご指定の文言に修正しました
+                    System.Windows.MessageBox.Show("ID、またはパスワードが違います", "認証失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show($"DB接続エラー: {ex.Message}", "エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                // 万が一DBの接続文字列やネットワーク自体に問題がある場合は、こちらで検知できます
+                System.Windows.MessageBox.Show($"DB接続エラーが発生しました:\n{ex.Message}", "システムエラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
     }
