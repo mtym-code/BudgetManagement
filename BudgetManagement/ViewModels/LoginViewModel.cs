@@ -2,54 +2,61 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace BudgetManagement.ViewModels
 {
     public partial class LoginViewModel : ViewModelBase
     {
         private readonly UserService _userService;
-        public event Action LoginSucceeded;
+        public event Action? LoginSucceeded;
 
-        [ObservableProperty]
-        private string username;
+        // ⭕ 【新規追加】画面側にメッセージ表示を依頼するイベント
+        // (タイトル, メッセージ本文, アイコンの種類) を渡します
+        public event Action<string, string, MessageBoxImage>? ShowMessage;
 
+        // TODO 開発用暫定
         [ObservableProperty]
-        private string password;
+        // private string username = string.Empty;
+        private string username = "900017";
+
+        // TODO 開発用暫定
+        [ObservableProperty]
+        // private string password = string.Empty;
+        private string password = "900017";
 
         public LoginViewModel(UserService userService)
         {
             _userService = userService;
         }
 
-        // ⭕ public メソッドに変更し、Viewから直接呼べるようにしました
         public async Task LoginAsync()
         {
             if (string.IsNullOrEmpty(Username) || string.IsNullOrEmpty(Password))
             {
-                System.Windows.MessageBox.Show("ユーザーIDまたはパスワードを入力してください。", "入力エラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                // ⭕ イベントを発火して画面側に処理を委譲
+                ShowMessage?.Invoke("入力エラー", "ユーザーIDまたはパスワードを入力してください。", MessageBoxImage.Warning);
                 return;
             }
 
             try
             {
-                // DB認証を実行
                 var isAuthenticated = await _userService.AuthenticateAsync(Username, Password);
 
                 if (isAuthenticated)
                 {
-                    // 成功時はメニュー画面へ
                     LoginSucceeded?.Invoke();
                 }
                 else
                 {
-                    // ⭕ エラーメッセージをご指定の文言に修正しました
-                    System.Windows.MessageBox.Show("ID、またはパスワードが違います", "認証失敗", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    // ⭕ イベントを発火
+                    ShowMessage?.Invoke("認証失敗", "ID、またはパスワードが違います", MessageBoxImage.Error);
                 }
             }
             catch (Exception ex)
             {
-                // 万が一DBの接続文字列やネットワーク自体に問題がある場合は、こちらで検知できます
-                System.Windows.MessageBox.Show($"DB接続エラーが発生しました:\n{ex.Message}", "システムエラー", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                // ⭕ イベントを発火
+                ShowMessage?.Invoke("システムエラー", $"DB接続エラーが発生しました:\n{ex.Message}", MessageBoxImage.Error);
             }
         }
     }

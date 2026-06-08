@@ -5,7 +5,22 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:BudgetManagement"
         mc:Ignorable="d"
-        Title="MainWindow"
-        WindowState="Maximized">
-    <Frame x:Name="MainFrame"/>
+        Title="予算システム"
+
+        
+        Width="1000" 
+        Height="800"
+        MinWidth="500"
+        MinHeight="800"
+        
+        
+        WindowState="Normal"
+        
+        UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType">
+
+    <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden"/>
+
 </Window>

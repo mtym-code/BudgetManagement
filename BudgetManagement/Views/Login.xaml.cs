@@ -11,32 +11,68 @@ namespace BudgetManagement.Views
         {
             InitializeComponent();
 
-            var vm = App.ServiceProvider.GetService<LoginViewModel>();
+            var vm = App.ServiceProvider.GetRequiredService<LoginViewModel>();
             DataContext = vm;
 
             if (vm != null)
             {
                 vm.LoginSucceeded += OnLoginSucceeded;
+
+                // ⭕ 【新規追加】ViewModelからのメッセージ表示イベントを購読
+                vm.ShowMessage += OnShowMessage;
             }
         }
 
-        // ⭕ async を追加して非同期メソッドに変更
         private async void Login_Click(object sender, RoutedEventArgs e)
         {
-            var vm = (LoginViewModel)DataContext;
-            if (vm != null)
+            // ⭕ 最初に一度だけ sender を Button 型として変数に格納します
+            var btn = sender as Button;
+
+            if (btn != null)
             {
-                // 1. パスワードを確実にViewModelへ格納
-                vm.Password = LoginPassword.Password;
-                
-                // 2. ログイン処理を直接安全に呼び出す
-                await vm.LoginAsync();
+                btn.IsEnabled = false; // 無効化
+            }
+
+            try
+            {
+                var vm = DataContext as LoginViewModel;
+                if (vm != null)
+                {
+                    vm.Password = LoginPassword.Password;
+                    await vm.LoginAsync();
+                }
+            }
+            finally
+            {
+                // ⭕ 上で宣言した btn をそのまま使って有効化します
+                if (btn != null)
+                {
+                    btn.IsEnabled = true;
+                }
             }
         }
 
         private void OnLoginSucceeded()
         {
             this.NavigationService.Navigate(new MenuPage());
+        }
+
+        // ⭕ 【新規追加】メッセージを表示する処理
+        private void OnShowMessage(string title, string message, MessageBoxImage icon)
+        {
+            // 現在このログイン画面（Page）をホストしている親ウィンドウを確実に取得する
+            var ownerWindow = Window.GetWindow(this);
+
+            if (ownerWindow != null)
+            {
+                // 親ウィンドウの中央にロックして表示
+                MessageBox.Show(ownerWindow, message, title, MessageBoxButton.OK, icon);
+            }
+            else
+            {
+                // 万が一ウィンドウが取得できなかった場合のフォールバック
+                MessageBox.Show(message, title, MessageBoxButton.OK, icon);
+            }
         }
     }
 }

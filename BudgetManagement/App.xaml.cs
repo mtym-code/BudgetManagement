@@ -40,6 +40,7 @@ namespace BudgetManagement
 
             // ViewModel
             services.AddTransient<SampleViewModel>();
+            services.AddTransient<LoginViewModel>();
 
             ServiceProvider = services.BuildServiceProvider();
         }
