@@ -1,0 +1,15 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- メインカラー -->
+    <Color x:Key="PrimaryColor">#6366F1</Color>
+    <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}"/>
+
+    <!-- 背景 -->
+    <SolidColorBrush x:Key="BackgroundBrush" Color="#EEF2FF"/>
+
+    <!-- テキスト -->
+    <SolidColorBrush x:Key="TextSubBrush" Color="#6B7280"/>
+
+</ResourceDictionary>

@@ -1,0 +1,101 @@
+﻿<Page x:Class="BudgetManagement.Views.SampleView"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:vm="clr-namespace:BudgetManagement.ViewModels"
+      Background="{StaticResource BackgroundBrush}">
+
+    <Grid>
+
+        <!-- カード -->
+        <Border Style="{StaticResource CardBorder}"
+                Width="750"
+                Padding="20"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+            <!-- 👇 ここが重要 -->
+            <Grid>
+
+                <!-- ✅ 行で分割 -->
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- 上部エリア -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- タイトル -->
+                    <TextBlock Text="ユーザー一覧"
+                               Style="{StaticResource TitleText}"/>
+
+                    <!-- ボタン -->
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal">
+
+                        <Button Content="読込"
+                                Style="{StaticResource PrimaryButton}"
+                                Width="90"
+                                Margin="0,0,8,0"
+                                Command="{Binding LoadUsersCommand}"/>
+
+                    </StackPanel>
+                </Grid>
+
+                <!-- DataGrid -->
+                <DataGrid Grid.Row="1"
+                          ItemsSource="{Binding Users}"
+                          AutoGenerateColumns="False"
+                          BorderThickness="0"
+                          Background="Transparent"
+                          GridLinesVisibility="None">
+
+                    <!-- ヘッダー -->
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="FontSize" Value="13"/>
+                            <Setter Property="Foreground" Value="{StaticResource TextSubBrush}"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+
+                    <!-- セル -->
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Setter Property="Padding" Value="10,4"/>
+                            <Setter Property="BorderThickness" Value="0"/>
+                        </Style>
+                    </DataGrid.CellStyle>
+
+                    <!-- 行 -->
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#EEF2FF"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+
+                    <!-- カラム -->
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="ID" Binding="{Binding Id}" Width="80"/>
+                        <DataGridTextColumn Header="名前" Binding="{Binding Name}" Width="*"/>
+                        <DataGridTextColumn Header="権限" Binding="{Binding Role}" Width="150"/>
+                    </DataGrid.Columns>
+
+                </DataGrid>
+
+            </Grid>
+
+        </Border>
+
+    </Grid>
+</Page>
