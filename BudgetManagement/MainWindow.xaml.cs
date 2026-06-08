@@ -11,7 +11,7 @@ namespace BudgetManagement
         public MainWindow()
         {
             InitializeComponent();
-            MainFrame.Navigate(new SampleView());
+            MainFrame.Navigate(new Login());
         }
     }
 }

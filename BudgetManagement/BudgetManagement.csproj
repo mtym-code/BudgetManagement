@@ -10,16 +10,16 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
-    <None Remove="Sql\User\GetAll.sql" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="appsettings.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="Sql\User\GetAll.sql">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Sql\**\*.sql" />
   </ItemGroup>
 
   <ItemGroup>
