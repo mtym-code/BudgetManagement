@@ -2,8 +2,6 @@
 using BudgetManagement.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.Wordprocessing;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -30,8 +28,9 @@ namespace BudgetManagement.ViewModels
         [ObservableProperty]
         private string _companyName = string.Empty;
 
+        // 👇 修正: 初期状態では課が未選択なので、nullにして状態テキストを非表示にする
         [ObservableProperty]
-        private string _statusText = "未確定";
+        private string? _statusText;
 
         // 画面のコンボボックスに実際に表示されるリスト
         [ObservableProperty]
@@ -201,18 +200,27 @@ namespace BudgetManagement.ViewModels
         // =========================================================
         // 💡 入力値が変化するたびに自動で呼ばれるメソッド (年度)
         // =========================================================
-        partial void OnYearChanged(string value)
+        partial void OnYearChanged(string? value)
         {
-            if (value != null && value.Length == 4)
+            // 年度が未入力、または3文字以下の場合
+            if (string.IsNullOrWhiteSpace(value) || value.Length <= 3)
             {
-                _ = HandleYearLostFocusAsync();
-            }
-            else
-            {
-                CompanyCode = string.Empty;
-                CompanyName = string.Empty;
+                // 課のリストをクリアして未選択状態にする
                 Sections.Clear();
-                _allSections.Clear();
+                SelectedSection = null;
+            }
+        }
+
+        // 👇 新規追加: 課の選択状態が変化するたびに自動で呼ばれるメソッド
+        // =========================================================
+        // 💡 入力値が変化するたびに自動で呼ばれるメソッド (課)
+        // =========================================================
+        partial void OnSelectedSectionChanged(SectionInfo? value)
+        {
+            // 課が未選択状態になった場合、状態ステータスも消去（非表示）する
+            if (value == null)
+            {
+                StatusText = null;
             }
         }
 

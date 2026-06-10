@@ -5,7 +5,7 @@ namespace BudgetManagement.Common.Helper
     public static class ConfigurationHelper
     {
 
-        private static IConfiguration _config;
+        private static IConfiguration _config = null!;
 
         public static void Initialize()
         {
@@ -14,7 +14,7 @@ namespace BudgetManagement.Common.Helper
                 .Build();
         }
 
-        public static string Get(string key)
+        public static string? Get(string key)
         {
             return _config[key];
         }
