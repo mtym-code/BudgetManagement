@@ -1,23 +1,26 @@
-﻿using System;
+﻿using BudgetManagement.Models;
+using BudgetManagement.Services;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Wordprocessing;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using BudgetManagement.Repositories;
 
 namespace BudgetManagement.ViewModels
 {
     public partial class DepartmentBudgetViewModel : ObservableObject
     {
-        private readonly DepartmentBudgetRepository _repository;
+        private readonly DepartmentBudgetService _service;
 
         // =========================================================
         // 画面と連動するプロパティ（自動的に変更通知が飛びます）
         // =========================================================
-        
+
         [ObservableProperty]
         private string _year = string.Empty;
 
@@ -30,7 +33,7 @@ namespace BudgetManagement.ViewModels
         [ObservableProperty]
         private string _statusText = "未確定";
 
-        // 課のコンボボックス用の一覧
+        // 画面のコンボボックスに実際に表示されるリスト
         [ObservableProperty]
         private ObservableCollection<SectionInfo> _sections = new();
 
@@ -38,41 +41,54 @@ namespace BudgetManagement.ViewModels
         [ObservableProperty]
         private SectionInfo? _selectedSection;
 
+        // 🌟【ポイント1】コンボボックスに打ち込まれた文字を受け取るプロパティ
+        [ObservableProperty]
+        private string _sectionSearchText = string.Empty;
+
+        // 🌟【ポイント1】絞り込み用の「元の全データ」を保存しておくリスト
+        private List<SectionInfo> _allSections = new();
+
         // =========================================================
-        // コンストラクター（App.xaml.cs から Repository が注入されます）
+        // コンストラクター
         // =========================================================
-        public DepartmentBudgetViewModel(DepartmentBudgetRepository repository)
+        public DepartmentBudgetViewModel(DepartmentBudgetService service)
         {
-            _repository = repository;
+            _service = service;
         }
 
         // =========================================================
         // ①・② 年度テキストボックスのカーソルが外れたとき（LostFocus）
         // =========================================================
         [RelayCommand]
-        private void HandleYearLostFocus()
+        private async Task HandleYearLostFocusAsync()
         {
             if (string.IsNullOrWhiteSpace(Year)) return;
 
             try
             {
-                // ① 会社コードと名称を取得
-                var companies = _repository.GetCompaniesByYear(Year);
-                if (companies.Any())
-                {
-                    CompanyCode = companies[0].CompanyCode;
-                    CompanyName = companies[0].CompanyName;
+                var companies = await _service.GetCompaniesByYearAsync(Year);
+                var companyList = companies.ToList();
 
-                    // ② 会社コードを使って課の一覧を取得
-                    var sectionList = _repository.GetSections(Year, CompanyCode);
-                    Sections = new ObservableCollection<SectionInfo>(sectionList);
+                if (companyList.Any())
+                {
+                    CompanyCode = companyList[0].CompanyCode;
+                    CompanyName = companyList[0].CompanyName;
+
+                    // 会社コードを使って課の一覧を取得
+                    var sectionList = await _service.GetSectionsAsync(Year, CompanyCode);
+
+                    // 🌟【ポイント2】取得したデータを「元の全データ」として裏側に保存
+                    _allSections = sectionList.ToList();
+
+                    // 画面表示用のコレクションにもセット
+                    Sections = new ObservableCollection<SectionInfo>(_allSections);
                 }
                 else
                 {
-                    // 該当年度の組織データがない場合、クリア
                     CompanyCode = string.Empty;
                     CompanyName = "該当会社なし";
                     Sections.Clear();
+                    _allSections.Clear(); // 該当なしなら裏側データも消す
                 }
             }
             catch (Exception ex)
@@ -85,17 +101,15 @@ namespace BudgetManagement.ViewModels
         // ③ 課のコンボボックス選択が確定したとき
         // =========================================================
         [RelayCommand]
-        private void HandleSectionChanged()
+        private async Task HandleSectionChangedAsync()
         {
             if (SelectedSection == null || string.IsNullOrEmpty(CompanyCode)) return;
 
             try
             {
-                // ③ 管理入力完了フラグを取得して状態をチェック
-                var flags = _repository.GetManagementInputFlags(Year, CompanyCode, SelectedSection.SectionCode);
-                
-                // フラグの有無や値に応じて画面の状態テキストを切り替える
-                if (flags.Contains("1"))
+                bool isCompleted = await _service.GetManagementInputFlagsAsync(Year, CompanyCode, SelectedSection.SectionCode);
+
+                if (isCompleted)
                 {
                     StatusText = "確定済";
                 }
@@ -114,7 +128,7 @@ namespace BudgetManagement.ViewModels
         // ④ Excel出力ボタンを押したとき
         // =========================================================
         [RelayCommand]
-        private void ExportExcel()
+        private async Task ExportExcelAsync()
         {
             if (SelectedSection == null)
             {
@@ -124,17 +138,16 @@ namespace BudgetManagement.ViewModels
 
             try
             {
-                // ④ 予算データをリポジトリから取得
-                List<ExcelBudgetData> budgetData = _repository.GetBudgetDataForExcel(Year, CompanyCode, SelectedSection.SectionCode);
+                var budgetData = await _service.GetBudgetDataForExcelAsync(Year, CompanyCode, SelectedSection.SectionCode);
+                var budgetList = budgetData.ToList();
 
-                if (!budgetData.Any())
+                if (!budgetList.Any())
                 {
                     MessageBox.Show("対象の予算データが存在しません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
                     return;
                 }
 
-                // TODO: ここに実際のExcel出力ライブラリ（ClosedXML や EPPlus など）を使ったファイル書き出し処理を書く
-                MessageBox.Show($"{budgetData.Count} 件の予算データをExcel出力しました（ファイル作成処理は別途実装）", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show($"{budgetList.Count} 件の予算データをExcel出力しました（ファイル作成処理は別途実装）", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
             catch (Exception ex)
             {
@@ -146,24 +159,15 @@ namespace BudgetManagement.ViewModels
         // ⑤〜⑧ ファイル選択（Excel取り込み）〜DB登録・更新
         // =========================================================
         [RelayCommand]
-        private async Task ImportExcelAndSave()
+        private async Task ImportExcelAndSaveAsync()
         {
             if (SelectedSection == null) return;
 
-            // TODO: ここで本来はダイアログを開いてExcelファイルを読み込み、データのリストを作成します。
-            // 今回は、取り込みロジックの枠組み（トランザクションとフラグ更新の流れ）を示します。
-
             try
             {
-                // 例として、画面を動かしているログインユーザーの情報を仮定
-                string loginUser = "900017"; 
-                string programId = "BM330"; 
+                string loginUser = "900017";
 
-                // ⑤〜⑧の一連のDB更新処理（トランザクションを貼る場合を想定した疑似ロジック）
-                // ※実際の一括Upsertはリポジトリの transaction 引数を利用してループ実行します。
-                
-                // 例: ⑦の担当入力完了フラグの登録
-                _repository.UpsertStaffInputStatus(
+                await _service.UpsertStaffInputStatusAsync(
                     year: Year,
                     companyCode: CompanyCode,
                     sectionCode: SelectedSection.SectionCode,
@@ -175,8 +179,7 @@ namespace BudgetManagement.ViewModels
                     updatedAt: DateTime.Now
                 );
 
-                // ⑧ もし既存データの更新（Update）だった場合のフラグ更新
-                _repository.UpdateStaffInputStatus(
+                await _service.UpdateStaffInputStatusAsync(
                     staffHandlerCode: loginUser,
                     updatedBy: loginUser,
                     updatedAt: DateTime.Now,
@@ -185,8 +188,7 @@ namespace BudgetManagement.ViewModels
                     sectionCode: SelectedSection.SectionCode
                 );
 
-                // フラグが変わったため状態表示を再チェック
-                HandleSectionChanged();
+                await HandleSectionChangedAsync();
 
                 MessageBox.Show("Excelデータの取り込みと完了フラグの更新が成功しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }
@@ -194,6 +196,50 @@ namespace BudgetManagement.ViewModels
             {
                 MessageBox.Show($"取り込み・登録処理に失敗しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+        }
+
+        // =========================================================
+        // 💡 入力値が変化するたびに自動で呼ばれるメソッド (年度)
+        // =========================================================
+        partial void OnYearChanged(string value)
+        {
+            if (value != null && value.Length == 4)
+            {
+                _ = HandleYearLostFocusAsync();
+            }
+            else
+            {
+                CompanyCode = string.Empty;
+                CompanyName = string.Empty;
+                Sections.Clear();
+                _allSections.Clear();
+            }
+        }
+
+        // =========================================================
+        // 🌟【ポイント3】コンボボックスに文字が入力されるたびに自動で呼ばれる絞り込み処理
+        // =========================================================
+        partial void OnSectionSearchTextChanged(string value)
+        {
+            // 入力が空になった場合は、退避しておいたマスターから全件を表示し直す
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                Sections = new ObservableCollection<SectionInfo>(_allSections);
+                return;
+            }
+
+            // リストからマウスで選択した際にも呼ばれてしまうため、
+            // 選択アイテムの表示名と入力文字が完全一致している場合は絞り込みをスキップする
+            if (SelectedSection != null && value == SelectedSection.DisplayName)
+            {
+                return;
+            }
+
+            // 入力された文字で、課コード（SectionCode）の先頭一致を検索
+            var filtered = _allSections.Where(s => s.SectionCode.StartsWith(value)).ToList();
+
+            // 絞り込んだ結果を画面のリストに再設定する
+            Sections = new ObservableCollection<SectionInfo>(filtered);
         }
     }
 }

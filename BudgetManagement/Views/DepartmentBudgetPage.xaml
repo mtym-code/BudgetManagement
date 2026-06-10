@@ -39,17 +39,18 @@
                                     </i:EventTrigger>
                                 </i:Interaction.Triggers>
                             </TextBox>
-
-                            <TextBlock Text="{Binding CompanyName}" VerticalAlignment="Center" Margin="16,0,0,0" FontSize="14" Foreground="#4B5563"/>
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,24,0">
                             <TextBlock Text="課" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="14"/>
-
                             <ComboBox Width="260" Height="28" VerticalContentAlignment="Center" BorderBrush="#9CA3AF"
                                       ItemsSource="{Binding Sections}"
-                                      DisplayMemberPath="SectionName"
-                                      SelectedItem="{Binding SelectedSection}">
+                                      DisplayMemberPath="DisplayName"
+                                      SelectedItem="{Binding SelectedSection}"
+                                      IsEditable="True"
+                                      IsTextSearchEnabled="False"
+                                      StaysOpenOnEdit="True"
+                                      Text="{Binding SectionSearchText, UpdateSourceTrigger=PropertyChanged}">
                                 <i:Interaction.Triggers>
                                     <i:EventTrigger EventName="SelectionChanged">
                                         <i:InvokeCommandAction Command="{Binding HandleSectionChangedCommand}" />
