@@ -32,10 +32,11 @@
                             <TextBlock Text="年度" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="14"/>
 
                             <TextBox Width="80" Height="28" VerticalContentAlignment="Center" BorderBrush="#9CA3AF"
+                                     MaxLength="4" 
                                      Text="{Binding Year, UpdateSourceTrigger=PropertyChanged}">
                                 <i:Interaction.Triggers>
                                     <i:EventTrigger EventName="LostFocus">
-                                        <i:InvokeCommandAction Command="{Binding HandleYearLostFocusCommand}" />
+                                        <i:InvokeCommandAction Command="{Binding HandleYearLostFocusAsyncCommand}" />
                                     </i:EventTrigger>
                                 </i:Interaction.Triggers>
                             </TextBox>
@@ -51,6 +52,9 @@
                                       IsEditable="True"
                                       IsTextSearchEnabled="False"
                                       StaysOpenOnEdit="True"
+                                      Loaded="SectionComboBox_Loaded"
+                                      PreviewKeyUp="SectionComboBox_PreviewKeyUp"
+                                      DropDownOpened="SectionComboBox_DropDownOpened"
                                       Text="{Binding SectionSearchText, UpdateSourceTrigger=PropertyChanged}">
                                 <i:Interaction.Triggers>
                                     <i:EventTrigger EventName="SelectionChanged">
@@ -58,9 +62,9 @@
                                     </i:EventTrigger>
                                 </i:Interaction.Triggers>
                             </ComboBox>
-                            </StackPanel>
+                        </StackPanel>
 
-                            <TextBlock Text="{Binding StatusText, StringFormat='状態：{0}'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,24,0">
+                        <TextBlock Text="{Binding StatusText, StringFormat='状態：{0}'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,24,0">
                                 <TextBlock.Style>
                                     <Style TargetType="TextBlock">
                                         <Setter Property="Visibility" Value="Visible"/>
@@ -92,7 +96,8 @@
 
                     <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button Content="クリア" Width="100" Height="36" Margin="0,0,16,0" 
-                                Background="White" BorderBrush="#9CA3AF" BorderThickness="1"/>
+                                Background="White" BorderBrush="#9CA3AF" BorderThickness="1"
+                                Command="{Binding ClearFieldsCommand}"/>
 
                         <Button Content="確定" Width="100" Height="36" 
                                 Background="White" BorderBrush="#9CA3AF" BorderThickness="1">

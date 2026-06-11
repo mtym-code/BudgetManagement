@@ -15,9 +15,8 @@ namespace BudgetManagement.ViewModels
     {
         private readonly DepartmentBudgetService _service;
 
-        // =========================================================
-        // 画面と連動するプロパティ（自動的に変更通知が飛びます）
-        // =========================================================
+        // 🌟 WPFのお節介な自動同期イベントの暴発を完全に防ぐガードフラグ
+        private bool _isInternalUpdating = false;
 
         [ObservableProperty]
         private string _year = string.Empty;
@@ -28,28 +27,21 @@ namespace BudgetManagement.ViewModels
         [ObservableProperty]
         private string _companyName = string.Empty;
 
-        // 👇 修正: 初期状態では課が未選択なので、nullにして状態テキストを非表示にする
         [ObservableProperty]
         private string? _statusText;
 
-        // 画面のコンボボックスに実際に表示されるリスト
+        // 🌟 インスタンスの再生成(new)によるクラッシュを防ぐため、最初から生成して使い回す
         [ObservableProperty]
         private ObservableCollection<SectionInfo> _sections = new();
 
-        // コンボボックスで現在選択されている課
         [ObservableProperty]
         private SectionInfo? _selectedSection;
 
-        // 🌟【ポイント1】コンボボックスに打ち込まれた文字を受け取るプロパティ
         [ObservableProperty]
         private string _sectionSearchText = string.Empty;
 
-        // 🌟【ポイント1】絞り込み用の「元の全データ」を保存しておくリスト
         private List<SectionInfo> _allSections = new();
 
-        // =========================================================
-        // コンストラクター
-        // =========================================================
         public DepartmentBudgetViewModel(DepartmentBudgetService service)
         {
             _service = service;
@@ -73,21 +65,46 @@ namespace BudgetManagement.ViewModels
                     CompanyCode = companyList[0].CompanyCode;
                     CompanyName = companyList[0].CompanyName;
 
-                    // 会社コードを使って課の一覧を取得
                     var sectionList = await _service.GetSectionsAsync(Year, CompanyCode);
-
-                    // 🌟【ポイント2】取得したデータを「元の全データ」として裏側に保存
                     _allSections = sectionList.ToList();
 
-                    // 画面表示用のコレクションにもセット
-                    Sections = new ObservableCollection<SectionInfo>(_allSections);
+                    // 🌟 ガードをかけて、安全に Clear & Add でリストを更新する
+                    _isInternalUpdating = true;
+                    try
+                    {
+                        SectionSearchText = string.Empty;
+                        SelectedSection = null;
+                        StatusText = null;
+
+                        Sections.Clear();
+                        foreach (var item in _allSections)
+                        {
+                            Sections.Add(item);
+                        }
+                    }
+                    finally
+                    {
+                        _isInternalUpdating = false;
+                    }
                 }
                 else
                 {
                     CompanyCode = string.Empty;
                     CompanyName = "該当会社なし";
-                    Sections.Clear();
-                    _allSections.Clear(); // 該当なしなら裏側データも消す
+
+                    _isInternalUpdating = true;
+                    try
+                    {
+                        _allSections.Clear();
+                        Sections.Clear();
+                        SectionSearchText = string.Empty;
+                        SelectedSection = null;
+                        StatusText = null;
+                    }
+                    finally
+                    {
+                        _isInternalUpdating = false;
+                    }
                 }
             }
             catch (Exception ex)
@@ -102,20 +119,13 @@ namespace BudgetManagement.ViewModels
         [RelayCommand]
         private async Task HandleSectionChangedAsync()
         {
+            if (_isInternalUpdating) return;
             if (SelectedSection == null || string.IsNullOrEmpty(CompanyCode)) return;
 
             try
             {
                 bool isCompleted = await _service.GetManagementInputFlagsAsync(Year, CompanyCode, SelectedSection.SectionCode);
-
-                if (isCompleted)
-                {
-                    StatusText = "確定済";
-                }
-                else
-                {
-                    StatusText = "未確定";
-                }
+                StatusText = isCompleted ? "確定済" : "未確定";
             }
             catch (Exception ex)
             {
@@ -124,130 +134,96 @@ namespace BudgetManagement.ViewModels
         }
 
         // =========================================================
-        // ④ Excel出力ボタンを押したとき
+        // 🌟【最速版】クリアボタンを押したときの処理
         // =========================================================
         [RelayCommand]
-        private async Task ExportExcelAsync()
+        private void ClearFields()
         {
-            if (SelectedSection == null)
-            {
-                MessageBox.Show("課を選択してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
+            _isInternalUpdating = true;
             try
             {
-                var budgetData = await _service.GetBudgetDataForExcelAsync(Year, CompanyCode, SelectedSection.SectionCode);
-                var budgetList = budgetData.ToList();
-
-                if (!budgetList.Any())
-                {
-                    MessageBox.Show("対象の予算データが存在しません。", "情報", MessageBoxButton.OK, MessageBoxImage.Information);
-                    return;
-                }
-
-                MessageBox.Show($"{budgetList.Count} 件の予算データをExcel出力しました（ファイル作成処理は別途実装）", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Excel出力処理でエラーが発生しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        // =========================================================
-        // ⑤〜⑧ ファイル選択（Excel取り込み）〜DB登録・更新
-        // =========================================================
-        [RelayCommand]
-        private async Task ImportExcelAndSaveAsync()
-        {
-            if (SelectedSection == null) return;
-
-            try
-            {
-                string loginUser = "900017";
-
-                await _service.UpsertStaffInputStatusAsync(
-                    year: Year,
-                    companyCode: CompanyCode,
-                    sectionCode: SelectedSection.SectionCode,
-                    staffHandlerCode: loginUser,
-                    deleteFlag: "false",
-                    createdBy: loginUser,
-                    createdAt: DateTime.Now,
-                    updatedBy: loginUser,
-                    updatedAt: DateTime.Now
-                );
-
-                await _service.UpdateStaffInputStatusAsync(
-                    staffHandlerCode: loginUser,
-                    updatedBy: loginUser,
-                    updatedAt: DateTime.Now,
-                    year: Year,
-                    companyCode: CompanyCode,
-                    sectionCode: SelectedSection.SectionCode
-                );
-
-                await HandleSectionChangedAsync();
-
-                MessageBox.Show("Excelデータの取り込みと完了フラグの更新が成功しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"取り込み・登録処理に失敗しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
-        }
-
-        // =========================================================
-        // 💡 入力値が変化するたびに自動で呼ばれるメソッド (年度)
-        // =========================================================
-        partial void OnYearChanged(string? value)
-        {
-            // 年度が未入力、または3文字以下の場合
-            if (string.IsNullOrWhiteSpace(value) || value.Length <= 3)
-            {
-                // 課のリストをクリアして未選択状態にする
+                _allSections.Clear();
                 Sections.Clear();
+
+                SectionSearchText = string.Empty;
                 SelectedSection = null;
+                StatusText = null;
+
+                Year = string.Empty;
+                CompanyCode = string.Empty;
+                CompanyName = string.Empty;
+            }
+            finally
+            {
+                _isInternalUpdating = false;
             }
         }
 
-        // 👇 新規追加: 課の選択状態が変化するたびに自動で呼ばれるメソッド
         // =========================================================
-        // 💡 入力値が変化するたびに自動で呼ばれるメソッド (課)
+        // 💡 入力値が変化するたびに自動で呼ばれるメソッド (課の選択変更)
         // =========================================================
         partial void OnSelectedSectionChanged(SectionInfo? value)
         {
-            // 課が未選択状態になった場合、状態ステータスも消去（非表示）する
-            if (value == null)
+            if (_isInternalUpdating) return;
+
+            if (value == null && string.IsNullOrWhiteSpace(SectionSearchText))
             {
                 StatusText = null;
             }
         }
 
         // =========================================================
-        // 🌟【ポイント3】コンボボックスに文字が入力されるたびに自動で呼ばれる絞り込み処理
+        // 🌟 コンボボックスに文字が入力されるたびに自動で呼ばれる絞り込み処理
         // =========================================================
         partial void OnSectionSearchTextChanged(string value)
         {
-            // 入力が空になった場合は、退避しておいたマスターから全件を表示し直す
+            // 🌟 最重要ガード: プログラム側でデータを操作している時は、WPFの自動暴発イベントを完全に無視する
+            if (_isInternalUpdating) return;
+
+            // ① 全て削除された（空文字になった）場合
             if (string.IsNullOrWhiteSpace(value))
             {
-                Sections = new ObservableCollection<SectionInfo>(_allSections);
+                _isInternalUpdating = true;
+                try
+                {
+                    SelectedSection = null;
+                    StatusText = null;
+
+                    Sections.Clear();
+                    foreach (var item in _allSections)
+                    {
+                        Sections.Add(item);
+                    }
+                }
+                finally
+                {
+                    _isInternalUpdating = false;
+                }
                 return;
             }
 
-            // リストからマウスで選択した際にも呼ばれてしまうため、
-            // 選択アイテムの表示名と入力文字が完全一致している場合は絞り込みをスキップする
+            // ② リストからマウスやEnterで選択され、表示名と入力文字が完全一致している場合はスキップ
             if (SelectedSection != null && value == SelectedSection.DisplayName)
             {
                 return;
             }
 
-            // 入力された文字で、課コード（SectionCode）の先頭一致を検索
-            var filtered = _allSections.Where(s => s.SectionCode.StartsWith(value)).ToList();
+            // ③ 部分一致での絞り込み処理
+            var filtered = _allSections.Where(s => s.DisplayName.Contains(value)).ToList();
 
-            // 絞り込んだ結果を画面のリストに再設定する
-            Sections = new ObservableCollection<SectionInfo>(filtered);
+            _isInternalUpdating = true;
+            try
+            {
+                Sections.Clear();
+                foreach (var item in filtered)
+                {
+                    Sections.Add(item);
+                }
+            }
+            finally
+            {
+                _isInternalUpdating = false;
+            }
         }
     }
 }
