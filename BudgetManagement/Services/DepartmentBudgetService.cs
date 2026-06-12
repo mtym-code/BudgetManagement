@@ -4,6 +4,7 @@ using BudgetManagement.Repositories;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using static BudgetManagement.Repositories.DepartmentBudgetRepository;
 
 namespace BudgetManagement.Services
 {
@@ -37,7 +38,7 @@ namespace BudgetManagement.Services
         }
 
         // Excel出力用のデータ型は仮で object にしています。専用のモデルがあればそれに変えてください。
-        public async Task<IEnumerable<object>> GetBudgetDataForExcelAsync(string year, string companyCode, string sectionCode)
+        public async Task<IEnumerable<MonthlyBudgetData>> GetBudgetDataForExcelAsync(string year, string companyCode, string sectionCode)
         {
             using var conn = DbConnectionFactory.Create();
             return await _repo.GetBudgetDataForExcelAsync(conn, year, companyCode, sectionCode);

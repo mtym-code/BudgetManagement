@@ -6,6 +6,28 @@ using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 
+// 🌟 ViewModelからアクセスできるように、Modelsとして一番外側に出しました
+namespace BudgetManagement.Models
+{
+    public class MonthlyBudgetData
+    {
+        public string AccountCode { get; set; }
+        public string SubAccountCode { get; set; }
+        public decimal Month04 { get; set; }
+        public decimal Month05 { get; set; }
+        public decimal Month06 { get; set; }
+        public decimal Month07 { get; set; }
+        public decimal Month08 { get; set; }
+        public decimal Month09 { get; set; }
+        public decimal Month10 { get; set; }
+        public decimal Month11 { get; set; }
+        public decimal Month12 { get; set; }
+        public decimal Month01 { get; set; }
+        public decimal Month02 { get; set; }
+        public decimal Month03 { get; set; }
+    }
+}
+
 namespace BudgetManagement.Repositories
 {
     // =========================================================
@@ -27,15 +49,15 @@ namespace BudgetManagement.Repositories
             string sql = @"
                 SELECT
                     s.company_code AS CompanyCode,
-                    m.abbreviation_name AS CompanyName  -- 修正: ryaku -> abbreviation_name
+                    m.abbreviation_name AS CompanyName  
                 FROM
                     ym_soshiki s
                 JOIN
-                    m_mei m ON s.company_code = m.name_code  -- 修正: meicd -> name_code
+                    m_mei m ON s.company_code = m.name_code  
                 WHERE
                     s.fiscal_year = @Year
                     AND s.mgmt_level = '070'
-                    AND m.name_id = 'SSKIZOKU16'             -- 修正: meiid -> name_id
+                    AND m.name_id = 'SSKIZOKU16'             
                 ORDER BY
                     s.company_code;";
 
@@ -50,16 +72,16 @@ namespace BudgetManagement.Repositories
             string sql = @"
                 SELECT
                     s.section_code AS SectionCode,
-                    m.abbreviation_name AS SectionName       -- 修正: ryaku -> abbreviation_name
+                    m.abbreviation_name AS SectionName       
                 FROM
                     ym_soshiki s
                 INNER JOIN 
-                    m_mei m ON s.section_code = m.name_code  -- 修正: meicd -> name_code
+                    m_mei m ON s.section_code = m.name_code  
                 WHERE
                     s.fiscal_year = @Year
                     AND s.company_code = @CompanyCode
                     AND s.mgmt_level = '020'
-                    AND m.name_id = 'SSKIZOKU3'              -- 修正: meiid -> name_id
+                    AND m.name_id = 'SSKIZOKU3'              
                     AND s.dept_expense_budget_input_type = '1'
                 ORDER BY
                     s.section_code;";
@@ -72,7 +94,6 @@ namespace BudgetManagement.Repositories
         // =========================================================
         public async Task<bool> GetManagementInputFlagsAsync(IDbConnection conn, string year, string companyCode, string sectionCode)
         {
-            // 素直に boolean のフラグを取得するSQLに直します
             string sql = @"
                 SELECT
                     u.mgmt_input_complete_flag
@@ -95,7 +116,6 @@ namespace BudgetManagement.Repositories
                     AND u.company_code = @CompanyCode
                     AND u.staff_input_complete_flag = true;";
 
-            // bool? で受け取り、データが無ければ false を返す
             var result = await conn.QueryFirstOrDefaultAsync<bool?>(sql, new { Year = year, CompanyCode = companyCode, SectionCode = sectionCode });
             return result ?? false;
         }
@@ -103,46 +123,36 @@ namespace BudgetManagement.Repositories
         // =========================================================
         // ④ Excel出力ボタン押下時に、予算データを取得
         // =========================================================
-        public async Task<IEnumerable<ExcelBudgetData>> GetBudgetDataForExcelAsync(IDbConnection conn, string year, string companyCode, string sectionCode)
+        public async Task<IEnumerable<MonthlyBudgetData>> GetBudgetDataForExcelAsync(IDbConnection conn, string year, string companyCode, string sectionCode)
         {
             string sql = @"
-                SELECT
-                    y.account_code AS AccountCode,
-                    y.sub_account_code AS SubAccountCode,
-                    SUM(y.budget_apr) AS BudgetApr,
-                    SUM(y.budget_may) AS BudgetMay,
-                    SUM(y.budget_jun) AS BudgetJun,
-                    SUM(y.budget_jul) AS BudgetJul,
-                    SUM(y.budget_aug) AS BudgetAug,
-                    SUM(y.budget_sep) AS BudgetSep,
-                    SUM(y.budget_oct) AS BudgetOct,
-                    SUM(y.budget_nov) AS BudgetNov,
-                    SUM(y.budget_dec) AS BudgetDec,
-                    SUM(y.budget_jan) AS BudgetJan,
-                    SUM(y.budget_feb) AS BudgetFeb,
-                    SUM(y.budget_mar) AS BudgetMar
-                FROM
-                    ym_soshiki s
-                INNER JOIN
-                    yt_yosan y
-                    ON  y.fiscal_year = s.fiscal_year
-                    AND y.org_code = s.section_code
-                    AND y.mgmt_level = s.mgmt_level
-                WHERE
-                    s.fiscal_year = @Year
-                    AND s.mgmt_level = '020'
-                    AND s.company_code = @CompanyCode
-                    AND s.section_code = @SectionCode
-                    AND y.data_type = '10'
-                    AND y.data_category = '1'
-                GROUP BY
-                    y.account_code,
-                    y.sub_account_code
-                ORDER BY
-                    y.account_code,
-                    y.sub_account_code;";
+        SELECT 
+            account_code AS AccountCode,
+            sub_account_code AS SubAccountCode,
+            SUM(CASE WHEN fiscal_month = '04' THEN budget_amount ELSE 0 END) AS Month04,
+            SUM(CASE WHEN fiscal_month = '05' THEN budget_amount ELSE 0 END) AS Month05,
+            SUM(CASE WHEN fiscal_month = '06' THEN budget_amount ELSE 0 END) AS Month06,
+            SUM(CASE WHEN fiscal_month = '07' THEN budget_amount ELSE 0 END) AS Month07,
+            SUM(CASE WHEN fiscal_month = '08' THEN budget_amount ELSE 0 END) AS Month08,
+            SUM(CASE WHEN fiscal_month = '09' THEN budget_amount ELSE 0 END) AS Month09,
+            SUM(CASE WHEN fiscal_month = '10' THEN budget_amount ELSE 0 END) AS Month10,
+            SUM(CASE WHEN fiscal_month = '11' THEN budget_amount ELSE 0 END) AS Month11,
+            SUM(CASE WHEN fiscal_month = '12' THEN budget_amount ELSE 0 END) AS Month12,
+            SUM(CASE WHEN fiscal_month = '01' THEN budget_amount ELSE 0 END) AS Month01,
+            SUM(CASE WHEN fiscal_month = '02' THEN budget_amount ELSE 0 END) AS Month02,
+            SUM(CASE WHEN fiscal_month = '03' THEN budget_amount ELSE 0 END) AS Month03
+        FROM 
+            yt_yosan
+        WHERE 
+            fiscal_year = @Year 
+            AND org_code = @SectionCode
+            AND delete_flag = false
+        GROUP BY 
+            account_code, 
+            sub_account_code;
+    ";
 
-            return await conn.QueryAsync<ExcelBudgetData>(sql, new { Year = year, CompanyCode = companyCode, SectionCode = sectionCode });
+            return await conn.QueryAsync<MonthlyBudgetData>(sql, new { Year = year, SectionCode = sectionCode });
         }
 
         // =========================================================

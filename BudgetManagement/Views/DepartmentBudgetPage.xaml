@@ -36,7 +36,7 @@
                                      Text="{Binding Year, UpdateSourceTrigger=PropertyChanged}">
                                 <i:Interaction.Triggers>
                                     <i:EventTrigger EventName="LostFocus">
-                                        <i:InvokeCommandAction Command="{Binding HandleYearLostFocusAsyncCommand}" />
+                                        <i:InvokeCommandAction Command="{Binding HandleYearLostFocusCommand}" />
                                     </i:EventTrigger>
                                 </i:Interaction.Triggers>
                             </TextBox>
@@ -44,15 +44,16 @@
 
                         <StackPanel Orientation="Horizontal" Margin="0,0,24,0">
                             <TextBlock Text="課" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="14"/>
+
                             <ComboBox Width="260" Height="28" 
                                       VerticalContentAlignment="Center" BorderBrush="#9CA3AF"
                                       ItemsSource="{Binding Sections}"
                                       DisplayMemberPath="DisplayName"
                                       SelectedItem="{Binding SelectedSection}"
                                       IsEditable="True"
-                                      IsTextSearchEnabled="False"
+                                      IsTextSearchEnabled="False" 
                                       StaysOpenOnEdit="True"
-                                      Loaded="SectionComboBox_Loaded"
+                                      TextBox.TextChanged="SectionComboBox_TextChanged"
                                       PreviewKeyUp="SectionComboBox_PreviewKeyUp"
                                       DropDownOpened="SectionComboBox_DropDownOpened"
                                       Text="{Binding SectionSearchText, UpdateSourceTrigger=PropertyChanged}">
@@ -65,28 +66,27 @@
                         </StackPanel>
 
                         <TextBlock Text="{Binding StatusText, StringFormat='状態：{0}'}" VerticalAlignment="Center" FontSize="14" Margin="0,0,24,0">
-                                <TextBlock.Style>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="Visibility" Value="Visible"/>
-                                        <Setter Property="FontWeight" Value="Bold"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding StatusText}" Value="{x:Null}">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding StatusText}" Value="">
-                                                <Setter Property="Visibility" Value="Collapsed"/>
-                                            </DataTrigger>
-
-                                            <DataTrigger Binding="{Binding StatusText}" Value="確定済">
-                                                <Setter Property="Foreground" Value="#DC2626"/>
-                                            </DataTrigger>
-                                            <DataTrigger Binding="{Binding StatusText}" Value="未確定">
-                                                <Setter Property="Foreground" Value="#2563EB"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </TextBlock.Style>
-                            </TextBlock>
+                            <TextBlock.Style>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="Visibility" Value="Visible"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding StatusText}" Value="{x:Null}">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusText}" Value="">
+                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusText}" Value="確定済">
+                                            <Setter Property="Foreground" Value="#DC2626"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StatusText}" Value="未確定">
+                                            <Setter Property="Foreground" Value="#2563EB"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </TextBlock.Style>
+                        </TextBlock>
                     </WrapPanel>
 
                     <Button Grid.Row="2" Content="Excel出力" Width="100" Height="36" 
@@ -104,7 +104,6 @@
                             <Button.Style>
                                 <Style TargetType="Button">
                                     <Setter Property="IsEnabled" Value="False"/>
-
                                     <Style.Triggers>
                                         <DataTrigger Binding="{Binding StatusText}" Value="未確定">
                                             <Setter Property="IsEnabled" Value="True"/>
