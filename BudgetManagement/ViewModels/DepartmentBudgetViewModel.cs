@@ -3,6 +3,7 @@ using BudgetManagement.Services;
 using ClosedXML.Excel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -175,11 +176,30 @@ namespace BudgetManagement.ViewModels
         [RelayCommand]
         private async Task ExportExcelAsync()
         {
+            // 既存のバリデーションを維持
             if (string.IsNullOrEmpty(Year) || SelectedSection == null)
             {
                 MessageBox.Show("年度と課を選択してから実行してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+
+            // 保存先のダイアログ確認
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            var dialog = new Microsoft.Win32.SaveFileDialog
+            {
+                Title = "予算出力ファイルの保存先を選択してください",
+                Filter = "Excel Worksheets (*.xlsx)|*.xlsx",
+                // ご提案の「部門別予算_年度_課コード_課名称_タイムスタンプ.xlsx」フォーマット
+                FileName = $"部門別予算_{Year}_{SelectedSection.SectionCode}_{SelectedSection.SectionName}_{timestamp}.xlsx"
+            };
+
+
+            if (dialog.ShowDialog() != true) return;
+
+            string outputPath = dialog.FileName;
+            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "BudgetTemplate.xlsx");
+
+            // ※StatusTextの書き換え処理を削除しました（画面の「確定済/未確定」を維持するため）
 
             try
             {
@@ -190,55 +210,72 @@ namespace BudgetManagement.ViewModels
                     x => x
                 );
 
-                string templatePath = @"C:\Templates\BudgetTemplate.xlsx"; // ※実際のテンプレートのパスに直してください
-                string outputFolder = @"C:\Output\";                      // ※実際の出力先フォルダに直してください
-
-                // ファイル名に日時を付与
-                string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                // ファイル名："部門別予算"_[課コード]_[年月日時分秒].xlsx
-                string newFileName = $"部門別予算_{SelectedSection.SectionCode}_{timestamp}.xlsx";
-                string outputPath = Path.Combine(outputFolder, newFileName);
-
-                File.Copy(templatePath, outputPath, true);
-
-                using (var workbook = new XLWorkbook(outputPath))
+                // UIをフリーズさせないよう非同期タスク内でExcel操作
+                await Task.Run(() =>
                 {
-                    var worksheet = workbook.Worksheet(1);
+                    File.Copy(templatePath, outputPath, true);
 
-                    worksheet.Cell("A1").Value = $"年度: {Year}";
-                    worksheet.Cell("A2").Value = $"課: {SelectedSection.DisplayName}";
-
-                    int startRow = 5;
-                    int lastRow = worksheet.LastRowUsed().RowNumber();
-
-                    for (int row = startRow; row <= lastRow; row++)
+                    using (var workbook = new XLWorkbook(outputPath))
                     {
-                        string accountCode = worksheet.Cell(row, 1).GetString();
-                        string subAccountCode = worksheet.Cell(row, 2).GetString();
+                        // 各シート共通で出力する値の準備
+                        string exportDate = DateTime.Now.ToString("yyyy-MM-dd");
+                        string reportTitle = "部門別経費予算";
+                        string sectionDisplayName = SelectedSection.DisplayName;
 
-                        if (string.IsNullOrEmpty(accountCode)) continue;
-
-                        string searchKey = $"{accountCode}_{subAccountCode}";
-
-                        if (budgetDataDict.TryGetValue(searchKey, out var rowData))
+                        // 1. Settingsシートの更新
+                        if (workbook.TryGetWorksheet("Settings", out var settingsSheet))
                         {
-                            worksheet.Cell(row, 3).Value = rowData.Month04;
-                            worksheet.Cell(row, 4).Value = rowData.Month05;
-                            worksheet.Cell(row, 5).Value = rowData.Month06;
-                            worksheet.Cell(row, 6).Value = rowData.Month07;
-                            worksheet.Cell(row, 7).Value = rowData.Month08;
-                            worksheet.Cell(row, 8).Value = rowData.Month09;
-                            worksheet.Cell(row, 9).Value = rowData.Month10;
-                            worksheet.Cell(row, 10).Value = rowData.Month11;
-                            worksheet.Cell(row, 11).Value = rowData.Month12;
-                            worksheet.Cell(row, 12).Value = rowData.Month01;
-                            worksheet.Cell(row, 13).Value = rowData.Month02;
-                            worksheet.Cell(row, 14).Value = rowData.Month03;
+                            settingsSheet.Cell("B1").Value = exportDate;   // 出力日
+                            settingsSheet.Cell("B4").Value = reportTitle;  // タイトル
+                            settingsSheet.Cell("B5").Value = Year;         // 年度
+                            settingsSheet.Cell("B6").Value = $"{CompanyCode}：{CompanyName}"; // 会社情報
+                            settingsSheet.Cell("B7").Value = sectionDisplayName; // 課情報
+                            settingsSheet.Hide();   // シート非表示
                         }
-                    }
 
-                    workbook.Save();
-                }
+                        // 2. 部門別経費予算シートの更新
+                        if (workbook.TryGetWorksheet("部門別経費予算", out var worksheet))
+                        {
+                            //// オートシェイプ廃止に伴う、セルへの直接出力
+                            //worksheet.Cell("G1").Value = reportTitle;        // SettingsのB4相当
+                            //worksheet.Cell("I3").Value = Year;               // SettingsのB5相当
+                            //worksheet.Cell("M3").Value = sectionDisplayName; // SettingsのB7相当
+
+                            int lastRow = worksheet.LastRowUsed().RowNumber();
+
+                            // 6行目以降の予算データ出力
+                            for (int row = 6; row <= lastRow; row++)
+                            {
+                                string accountCode = worksheet.Cell(row, "H").GetString()?.Trim() ?? string.Empty;
+                                string subAccountCode = worksheet.Cell(row, "I").GetString()?.Trim() ?? string.Empty;
+
+                                if (string.IsNullOrEmpty(accountCode) || string.IsNullOrEmpty(subAccountCode)) continue;
+
+                                string searchKey = $"{accountCode}_{subAccountCode}";
+
+                                if (budgetDataDict.TryGetValue(searchKey, out var rowData))
+                                {
+                                    // 4月(M) ～ 9月(R)
+                                    worksheet.Cell(row, "M").Value = rowData.Month04;
+                                    worksheet.Cell(row, "N").Value = rowData.Month05;
+                                    worksheet.Cell(row, "O").Value = rowData.Month06;
+                                    worksheet.Cell(row, "P").Value = rowData.Month07;
+                                    worksheet.Cell(row, "Q").Value = rowData.Month08;
+                                    worksheet.Cell(row, "R").Value = rowData.Month09;
+
+                                    // 10月(T) ～ 3月(Y)
+                                    worksheet.Cell(row, "T").Value = rowData.Month10;
+                                    worksheet.Cell(row, "U").Value = rowData.Month11;
+                                    worksheet.Cell(row, "V").Value = rowData.Month12;
+                                    worksheet.Cell(row, "W").Value = rowData.Month01;
+                                    worksheet.Cell(row, "X").Value = rowData.Month02;
+                                    worksheet.Cell(row, "Y").Value = rowData.Month03;
+                                }
+                            }
+                        }
+                        workbook.Save();
+                    }
+                });
 
                 MessageBox.Show($"Excelを出力しました。\n保存先: {outputPath}", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
             }

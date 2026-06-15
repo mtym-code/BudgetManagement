@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
+    <None Remove="Templates\BudgetTemplate.xlsx" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +21,12 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Sql\**\*.sql" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Templates\BudgetTemplate.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

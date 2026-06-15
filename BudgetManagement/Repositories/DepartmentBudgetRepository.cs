@@ -11,8 +11,8 @@ namespace BudgetManagement.Models
 {
     public class MonthlyBudgetData
     {
-        public string AccountCode { get; set; }
-        public string SubAccountCode { get; set; }
+        public string AccountCode { get; set; } = string.Empty;
+        public string SubAccountCode { get; set; } = string.Empty;
         public decimal Month04 { get; set; }
         public decimal Month05 { get; set; }
         public decimal Month06 { get; set; }
