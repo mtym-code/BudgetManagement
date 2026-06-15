@@ -10,6 +10,10 @@ namespace BudgetManagement.Models
         public string? Name { get; set; }     // ⭕ ? を追加
         public string? Password { get; set; } // ⭕ ? を追加
         public string? Role { get; set; }     // ⭕ ? を追加
+        /// <summary>
+        /// M_TANTOマスタのSESIKMEI（正式名・全角文字列）
+        /// </summary>
+        public string? Sesikmei { get; set; } // 追加
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

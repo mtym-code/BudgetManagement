@@ -155,6 +155,44 @@ namespace BudgetManagement.Repositories
             return await conn.QueryAsync<MonthlyBudgetData>(sql, new { Year = year, SectionCode = sectionCode });
         }
 
+
+        /// <summary>
+        /// 部門別経費予算データのUPSERT（登録・更新）を行います。
+        /// </summary>
+        public async Task<int> UpsertAsync(IDbConnection conn, dynamic param)
+        {
+            // C#コード内に直接SQLを定義
+            string sql = @"
+                INSERT INTO YT_YOSAN ( 
+                  data_type, fiscal_year, mgmt_level, org_code, brand_code, 
+                  main_product_dept_code, product_category, account_expense_type, account_code, sub_account_code, 
+                  data_category, year_month, fiscal_month, allocation_source_code, budget_amount, 
+                  rate, category, flag_1, flag_2, flag_3, 
+                  flag_4, flag_5, created_program, updated_program, delete_flag, 
+                  created_by, created_at, updated_by, updated_at 
+                ) VALUES ( 
+                  '10', @FiscalYear, '020', @OrgCode, '99999999', 
+                  '99999999', '9', @AccountExpenseType, @AccountCode, @SubAccountCode, 
+                  '1', @YearMonth, LPAD(@FiscalMonth::text, 2, '0'), '99999999', @BudgetAmount, 
+                  0, '0', '0', '0', '0', 
+                  '0', '0', @CreatedProgram, NULL, @DeleteFlag, 
+                  @CreatedBy, CURRENT_TIMESTAMP, NULL, NULL 
+                )
+                ON CONFLICT (
+                  data_type, fiscal_year, mgmt_level, org_code, brand_code, 
+                  main_product_dept_code, product_category, account_expense_type, account_code, sub_account_code, 
+                  data_category, year_month, fiscal_month, allocation_source_code
+                )
+                DO UPDATE SET 
+                  budget_amount = EXCLUDED.budget_amount,
+                  delete_flag = EXCLUDED.delete_flag,
+                  updated_program = @UpdatedProgram,
+                  updated_by = @UpdatedBy,
+                  updated_at = CURRENT_TIMESTAMP;";
+
+            return await conn.ExecuteAsync(sql, (object)param);
+        }
+
         // =========================================================
         // ⑤ 担当入力完了フラグを登録する（UPSERT）
         // =========================================================

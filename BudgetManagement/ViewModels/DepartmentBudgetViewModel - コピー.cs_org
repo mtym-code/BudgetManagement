@@ -67,9 +67,6 @@ namespace BudgetManagement.ViewModels
         // 内部で保持しておく、DB保存用のデータ本体
         private ImportResult? _currentImportResult;
 
-        // ViewにHTML描画を依頼するためのイベント
-        public event EventHandler<string>? HtmlRenderRequested;
-
         // ★修正箇所：引数に DepartmentBudgetImportService を追加しました
         public DepartmentBudgetViewModel(DepartmentBudgetService service, DepartmentBudgetImportService importService)
         {
@@ -340,20 +337,14 @@ namespace BudgetManagement.ViewModels
             {
                 try
                 {
-                    // 1. データの取り込みは今まで通り（明細だけをDB用に取得）
+                    // DB保存はせず、Excelをパースして画面プロパティにバインドするだけ
                     _currentImportResult = await _importService.ReadExcelAsync(dialog.FileName);
 
+                    // 画面のテキストとリストに反映
                     ImportYearInfo = _currentImportResult.Year;
                     ImportCompanyInfo = _currentImportResult.CompanyInfo;
                     ImportSectionInfo = _currentImportResult.SectionInfo;
                     ImportedDataList = new ObservableCollection<ImportedBudgetData>(_currentImportResult.Details);
-
-                    // 2. ★【ここを変更】すでにプロジェクトにあるClosedXMLを使って、
-                    //    Excelのシートを「合計行や関数結果も入った状態」でHTMLに変換する
-                    string html = GenerateHtmlFromExcel(dialog.FileName);
-
-                    // 3. View（WebView2）へ通知
-                    HtmlRenderRequested?.Invoke(this, html);
 
                     MessageBox.Show("ファイルの読み込みが完了しました。\n内容を確認後、「確定」ボタンを押して登録してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
@@ -411,127 +402,22 @@ namespace BudgetManagement.ViewModels
                 MessageBox.Show($"更新処理中にエラーが発生しました。\n{ex.Message}", "重大なエラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
-        private string RenderHtmlPreview(ImportResult importResult)
+        private async Task RenderHtmlPreview(ImportResult importResult)
         {
+            // C#で簡易的なHTMLを構築します
             var html = new StringBuilder();
-            html.Append("<html><head><style>");
-            html.Append("table { border-collapse: collapse; width: 100%; font-family: 'Segoe UI', sans-serif; } ");
-            html.Append("th { background-color: #F3F4F6; border: 1px solid #D1D5DB; padding: 8px; font-size: 13px; text-align: center; } ");
-            html.Append("td { border: 1px solid #E5E7EB; padding: 8px; font-size: 13px; text-align: right; } ");
-            html.Append(".text-left { text-align: left; } ");
-            html.Append(".target-y { background-color: #e6fffa; }");
-            html.Append("</style></head><body>");
+            html.Append("<html><head><style>table { border-collapse: collapse; width: 100%; } td, th { border: 1px solid #ccc; padding: 4px; font-size: 12px; } .target-y { background-color: #e6fffa; }</style></head><body>");
+            html.Append("<table><tr><th>科目</th><th>細目</th>...</tr>"); // ヘッダー
 
-            // ヘッダー行
-            html.Append("<table><tr><th>科目</th><th>細目</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>1月</th><th>2月</th><th>3月</th></tr>");
-
-            if (importResult?.Details != null)
+            foreach (var row in importResult.Details)
             {
-                foreach (var row in importResult.Details)
-                {
-                    // データ行 (E列のフラグ等で背景色を変える場合は、ここで <tr> のクラスを調整できます)
-                    html.Append("<tr>");
-                    html.Append($"<td class='text-left'>{row.AccountCode}</td>");
-                    html.Append($"<td class='text-left'>{row.SubAccountCode}</td>");
-                    html.Append($"<td>{row.Month04}</td>");
-                    html.Append($"<td>{row.Month05}</td>");
-                    html.Append($"<td>{row.Month06}</td>");
-                    html.Append($"<td>{row.Month07}</td>");
-                    html.Append($"<td>{row.Month08}</td>");
-                    html.Append($"<td>{row.Month09}</td>");
-                    html.Append($"<td>{row.Month10}</td>");
-                    html.Append($"<td>{row.Month11}</td>");
-                    html.Append($"<td>{row.Month12}</td>");
-                    html.Append($"<td>{row.Month01}</td>");
-                    html.Append($"<td>{row.Month02}</td>");
-                    html.Append($"<td>{row.Month03}</td>");
-                    html.Append("</tr>");
-                }
+                // ここで取り込み対象行ならクラスを付与
+                html.Append("<tr><td>" + row.AccountCode + "</td><td>" + row.SubAccountCode + "</td>...</tr>");
             }
             html.Append("</table></body></html>");
 
-            return html.ToString();
-        }
-        private string GenerateHtmlFromExcel(string filePath)
-        {
-            var html = new StringBuilder();
-            html.Append("<html><head><style>");
-            html.Append("table { border-collapse: collapse; width: 100%; font-family: 'Segoe UI', sans-serif; } ");
-            html.Append("th, td { border: 1px solid #D1D5DB; padding: 6px; font-size: 12px; } ");
-            html.Append("th { background-color: #F3F4F6; font-weight: bold; text-align: center; } ");
-            html.Append(".text-left { text-align: left; } ");
-            html.Append(".text-right { text-align: right; } ");
-            html.Append("</style></head><body><table>");
-
-            using (var workbook = new XLWorkbook(filePath))
-            {
-                var worksheet = workbook.Worksheets.First();
-
-                int lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 4;
-                int lastColumn = worksheet.LastColumnUsed()?.ColumnNumber() ?? 7;
-
-                // ★結合に巻き込まれて「表示をスキップすべきセル」を記録するお留守番リスト
-                var skippedCells = new HashSet<string>();
-                bool isFirstRow = true;
-
-                for (int r = 4; r <= lastRow; r++)
-                {
-                    var row = worksheet.Row(r);
-                    html.Append("<tr>");
-
-                    for (int c = 7; c <= lastColumn; c++)
-                    {
-                        var cell = row.Cell(c);
-                        string cellAddress = cell.Address.ToString(); // 例: "G4"
-
-                        // ★すでに結合の一部として処理済みのセル（H4など）なら、HTMLに出さずにスルー
-                        if (skippedCells.Contains(cellAddress))
-                        {
-                            continue;
-                        }
-
-                        string displayValue = cell.GetFormattedString();
-                        string mergeAttributes = ""; // colspanやrowspanを入れる文字列
-
-                        // ★Excel側でセルが結合されているかチェック
-                        if (cell.IsMerged())
-                        {
-                            var range = cell.MergedRange();
-                            int rowCount = range.RowCount();      // 縦に何セル分か
-                            int columnCount = range.ColumnCount(); // 横に何セル分か（G4とH4なら「2」になる）
-
-                            // 結合範囲内の「自分以外のセル」をすべてスキップリストに登録する
-                            foreach (var rangeCell in range.Cells())
-                            {
-                                if (rangeCell.Address.ToString() != cellAddress)
-                                {
-                                    skippedCells.Add(rangeCell.Address.ToString());
-                                }
-                            }
-
-                            // HTML用の属性を組み立てる
-                            if (columnCount > 1) mergeAttributes += $" colspan='{columnCount}'";
-                            if (rowCount > 1) mergeAttributes += $" rowspan='{rowCount}'";
-                        }
-
-                        // HTMLの出力（組み立てたmergeAttributesをタグに埋め込む）
-                        if (isFirstRow)
-                        {
-                            html.Append($"<th{mergeAttributes}>{displayValue}</th>");
-                        }
-                        else
-                        {
-                            string cellClass = cell.Value.IsNumber ? "class='text-right'" : "class='text-left'";
-                            html.Append($"<td {cellClass}{mergeAttributes}>{displayValue}</td>");
-                        }
-                    }
-                    html.Append("</tr>");
-                    isFirstRow = false;
-                }
-            }
-
-            html.Append("</table></body></html>");
-            return html.ToString();
+            // WebView2に表示 (PageのコードビハインドからWebView2にアクセス)
+            // ※実際にはViewModelからPageへ通知するか、Pageのコードビハインドで処理します
         }
     }
 }

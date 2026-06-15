@@ -14,7 +14,16 @@ namespace BudgetManagement.Views
         public DepartmentBudgetPage()
         {
             InitializeComponent();
-            this.DataContext = App.ServiceProvider.GetRequiredService<DepartmentBudgetViewModel>();
+
+            // 変数 vm で受け取るように少し変更します
+            var vm = App.ServiceProvider.GetRequiredService<DepartmentBudgetViewModel>();
+            this.DataContext = vm;
+
+            // ★追加: ViewModelのイベントをキャッチする設定
+            vm.HtmlRenderRequested += ViewModel_HtmlRenderRequested;
+
+            // ★追加: 画面が開かれたときにWebView2の初期設定を開始する
+            InitializeWebViewAsync();
         }
 
         // 🌟 ① 入力制限 ＆ フリーズバグの完全回避
@@ -101,6 +110,30 @@ namespace BudgetManagement.Views
                     }
                 }, DispatcherPriority.Input);
             }
+        }
+        private async void InitializeWebViewAsync()
+        {
+            // WebView2のエンジンを準備します (必須処理)
+            await PreviewWebView.EnsureCoreWebView2Async(null);
+        }
+
+        private void ViewModel_HtmlRenderRequested(object? sender, string htmlContent)
+        {
+            // ViewModelからHTMLが送られてきたら、WebView2に表示します
+            if (PreviewWebView != null && PreviewWebView.CoreWebView2 != null)
+            {
+                PreviewWebView.NavigateToString(htmlContent);
+            }
+        }
+
+        // ページを閉じるときにイベントの繋がりを解除する（メモリ対策）
+        private void Page_Unloaded(object sender, RoutedEventArgs e)
+        {
+            if (this.DataContext is DepartmentBudgetViewModel vm)
+            {
+                vm.HtmlRenderRequested -= ViewModel_HtmlRenderRequested;
+            }
+            PreviewWebView?.Dispose();
         }
     }
 }

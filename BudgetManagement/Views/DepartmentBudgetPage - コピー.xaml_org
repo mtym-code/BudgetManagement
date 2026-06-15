@@ -141,7 +141,26 @@
                     </StackPanel>
 
                     <Border Grid.Row="1" BorderBrush="#9CA3AF" BorderThickness="1" Background="White">
-                        <Wpf:WebView2 x:Name="PreviewWebView" xmlns:Wpf="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf" />
+                        <DataGrid ItemsSource="{Binding ImportedDataList}" AutoGenerateColumns="False" 
+                                  IsReadOnly="True" Background="Transparent" BorderThickness="0" 
+                                  HeadersVisibility="Column" GridLinesVisibility="All">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="科目" Binding="{Binding AccountCode}" Width="70"/>
+                                <DataGridTextColumn Header="細目" Binding="{Binding SubAccountCode}" Width="70"/>
+                                <DataGridTextColumn Header="4月" Binding="{Binding Month04}" Width="*"/>
+                                <DataGridTextColumn Header="5月" Binding="{Binding Month05}" Width="*"/>
+                                <DataGridTextColumn Header="6月" Binding="{Binding Month06}" Width="*"/>
+                                <DataGridTextColumn Header="7月" Binding="{Binding Month07}" Width="*"/>
+                                <DataGridTextColumn Header="8月" Binding="{Binding Month08}" Width="*"/>
+                                <DataGridTextColumn Header="9月" Binding="{Binding Month09}" Width="*"/>
+                                <DataGridTextColumn Header="10月" Binding="{Binding Month10}" Width="*"/>
+                                <DataGridTextColumn Header="11月" Binding="{Binding Month11}" Width="*"/>
+                                <DataGridTextColumn Header="12月" Binding="{Binding Month12}" Width="*"/>
+                                <DataGridTextColumn Header="1月" Binding="{Binding Month01}" Width="*"/>
+                                <DataGridTextColumn Header="2月" Binding="{Binding Month02}" Width="*"/>
+                                <DataGridTextColumn Header="3月" Binding="{Binding Month03}" Width="*"/>
+                            </DataGrid.Columns>
+                        </DataGrid>
                     </Border>
                 </Grid>
             </Border>

@@ -41,7 +41,7 @@ namespace BudgetManagement
             // Service
             services.AddTransient<UserService>();
             services.AddTransient<DepartmentBudgetService>();
-            // （※もしDepartmentBudgetServiceなども作成している場合は、同様にここでAddTransientしてください）
+            services.AddTransient<DepartmentBudgetImportService>(); // 追加
 
             // ViewModel
             services.AddTransient<SampleViewModel>();
