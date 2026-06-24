@@ -1,6 +1,4 @@
-﻿using BudgetManagement.Common;
-using BudgetManagement.Common.Helper;
-using BudgetManagement.Repositories;
+﻿using BudgetManagement.Repositories;
 using BudgetManagement.Services;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -12,8 +10,6 @@ using System.Windows;
 
 namespace BudgetManagement.ViewModels
 {
-    public enum FilterStatus { All, Done, NotDone }
-
     public class InputScreenItem
     {
         public string ScreenCode { get; set; } = string.Empty;
@@ -27,7 +23,7 @@ namespace BudgetManagement.ViewModels
         [ObservableProperty] private bool _isLoading = false;
         public bool IsNotLoading => !IsLoading;
 
-        // ① 業務プルダウンの選択肢
+        // 業務プルダウンの選択肢
         public ObservableCollection<InputScreenItem> InputScreens { get; } = new ObservableCollection<InputScreenItem>
         {
             new InputScreenItem { ScreenCode = "322", DisplayName = "商品課別営業予算" },
@@ -51,13 +47,19 @@ namespace BudgetManagement.ViewModels
 
         public ObservableCollection<string> Months { get; } = new ObservableCollection<string>
         {
-            "01月", "02月", "03月", "04月", "05月", "06月", 
+            "01月", "02月", "03月", "04月", "05月", "06月",
             "07月", "08月", "09月", "10月", "11月", "12月"
         };
         [ObservableProperty] private string? _selectedMonth;
 
-        [ObservableProperty] private FilterStatus _inputStatusFilter = FilterStatus.All;
-        [ObservableProperty] private FilterStatus _sendStatusFilter = FilterStatus.All;
+        // 🌟 Converterを使わず、個別のboolプロパティでラジオボタンを管理
+        [ObservableProperty] private bool _isInputFilterAll = true;
+        [ObservableProperty] private bool _isInputFilterDone = false;
+        [ObservableProperty] private bool _isInputFilterNotDone = false;
+
+        [ObservableProperty] private bool _isSendFilterAll = true;
+        [ObservableProperty] private bool _isSendFilterDone = false;
+        [ObservableProperty] private bool _isSendFilterNotDone = false;
 
         // 活性・非活性制御フラグ
         [ObservableProperty] private bool _isDepartmentEnabled = true;
@@ -73,21 +75,18 @@ namespace BudgetManagement.ViewModels
             LoadMastersAsync().ConfigureAwait(false); // 画面起動時にマスタ取得
         }
 
-        // 🌟 業務（InputScreen）が変更されたときの活性/非活性コントロール
         partial void OnSelectedInputScreenChanged(InputScreenItem? value)
         {
             if (value == null) return;
 
-            // 360(経費営業外見通し)の時は「部・課」は非表示/無効にし、「月」を有効にする
             IsDepartmentEnabled = value.ScreenCode != "360";
             IsSectionEnabled = value.ScreenCode != "360";
-            // 360 と 323(見通し) の時は「月」を有効にする（※仕様に応じて適宜変更してください）
-            IsMonthEnabled = value.ScreenCode == "360" || value.ScreenCode == "323"; 
+            IsMonthEnabled = value.ScreenCode == "360" || value.ScreenCode == "323";
 
             if (!IsDepartmentEnabled) SelectedDepartment = null;
             if (!IsSectionEnabled) SelectedSection = null;
             if (!IsMonthEnabled) SelectedMonth = null;
-            
+
             OperationItems.Clear();
             IsUpdateEnabled = false;
         }
@@ -104,8 +103,7 @@ namespace BudgetManagement.ViewModels
             }
             catch (Exception ex)
             {
-                var errorInfo = ErrorMessageHelper.GetErrorMessage(ex, "マスタの取得に失敗しました。\n{0}");
-                CustomMessageBox.Show(errorInfo.Message, errorInfo.Title, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"マスタの取得に失敗しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -118,7 +116,7 @@ namespace BudgetManagement.ViewModels
         {
             if (SelectedInputScreen == null || string.IsNullOrWhiteSpace(Year) || SelectedCompany == null)
             {
-                CustomMessageBox.Show("「入力画面」「年度」「会社」は必須入力です。", "確認", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show("「入力画面」「年度」「会社」は必須入力です。", "確認", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
@@ -133,15 +131,15 @@ namespace BudgetManagement.ViewModels
 
                 var rawData = await _service.GetOperationMasterListAsync(Year, SelectedInputScreen.ScreenCode, SelectedCompany.NameCode, deptCode, sectionCode, month);
 
-                // C#側でラジオボタンの状態に合わせてリストを絞り込み
-                var filtered = rawData.Where(d => 
-                    (InputStatusFilter == FilterStatus.All || 
-                    (InputStatusFilter == FilterStatus.Done && d.IsStaffInputCompleted) || 
-                    (InputStatusFilter == FilterStatus.NotDone && !d.IsStaffInputCompleted))
+                // 🌟 boolプロパティを使ってリストを絞り込み
+                var filtered = rawData.Where(d =>
+                    (IsInputFilterAll ||
+                    (IsInputFilterDone && d.IsStaffInputCompleted) ||
+                    (IsInputFilterNotDone && !d.IsStaffInputCompleted))
                     &&
-                    (SendStatusFilter == FilterStatus.All || 
-                    (SendStatusFilter == FilterStatus.Done && d.IsSendFlag) || 
-                    (SendStatusFilter == FilterStatus.NotDone && !d.IsSendFlag))
+                    (IsSendFilterAll ||
+                    (IsSendFilterDone && d.IsSendFlag) ||
+                    (IsSendFilterNotDone && !d.IsSendFlag))
                 ).ToList();
 
                 OperationItems = new ObservableCollection<BudgetOperationItem>(filtered);
@@ -149,8 +147,7 @@ namespace BudgetManagement.ViewModels
             }
             catch (Exception ex)
             {
-                var errorInfo = ErrorMessageHelper.GetErrorMessage(ex, "データの検索に失敗しました。\n{0}");
-                CustomMessageBox.Show(errorInfo.Message, errorInfo.Title, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"データの検索に失敗しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {
@@ -163,22 +160,24 @@ namespace BudgetManagement.ViewModels
         {
             if (OperationItems.Count == 0) return;
 
-            var result = CustomMessageBox.Show("表示されている内容でデータベースを更新します。よろしいですか？", "更新確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            var result = MessageBox.Show("表示されている内容でデータベースを更新します。よろしいですか？", "更新確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
             if (result != MessageBoxResult.Yes) return;
 
             try
             {
                 IsLoading = true;
-                
-                await _service.UpdateOperationMasterAsync(Year, SelectedInputScreen!.ScreenCode, OperationItems, SessionManager.UserId);
-                CustomMessageBox.Show("データを更新しました。", "更新完了", MessageBoxButton.OK, MessageBoxImage.Information);
-                
-                await SearchAsync(); // 更新後、最新状態を再検索
+
+                // ※SessionManagerが存在しない/使わない場合は、適宜固定文字列や他のユーザー情報変数に置き換えてください
+                string userId = BudgetManagement.Common.SessionManager.UserId;
+                await _service.UpdateOperationMasterAsync(Year, SelectedInputScreen!.ScreenCode, OperationItems, userId);
+
+                MessageBox.Show("データを更新しました。", "更新完了", MessageBoxButton.OK, MessageBoxImage.Information);
+
+                await SearchAsync();
             }
             catch (Exception ex)
             {
-                var errorInfo = ErrorMessageHelper.GetErrorMessage(ex, "更新処理中にエラーが発生しました。\n{0}");
-                CustomMessageBox.Show(errorInfo.Message, errorInfo.Title, MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"更新処理中にエラーが発生しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
             finally
             {

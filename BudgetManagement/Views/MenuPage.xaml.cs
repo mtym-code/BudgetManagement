@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Windows.Controls;
 using System.Windows.Input;
 
 namespace BudgetManagement.Views
@@ -65,6 +66,15 @@ namespace BudgetManagement.Views
             
             // 中央のカードの中身を 経費営業外見通し画面 に差し替える
             MainFrame.Navigate(new ExpenseNonOperatingForecastPage());
+        }
+
+        private void BudgetOperationMasterLink_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            NavMaintenancePopup.IsOpen = false; // ポップアップを閉じる
+
+            // Frame (MainFrame) の中身を予算運用マスタ画面に切り替える
+            var page = App.ServiceProvider.GetRequiredService<BudgetOperationMasterPage>();
+            MainFrame.Navigate(page);
         }
     }
 }

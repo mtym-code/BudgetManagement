@@ -165,7 +165,7 @@
                     <DropShadowEffect BlurRadius="8" ShadowDepth="2" Color="#22000000"/>
                 </Border.Effect>
                 <StackPanel MinWidth="180">
-                    <TextBlock Text="予算運用マスタ" Style="{StaticResource MenuTextLink}"/>
+                    <TextBlock Text="予算運用マスタ" Style="{StaticResource MenuTextLink}" MouseLeftButtonDown="BudgetOperationMasterLink_Click"/>
                     <TextBlock Text="予算係数マスタ" Style="{StaticResource MenuTextLink}"/>
                     <TextBlock Text="担当者マスタ" Style="{StaticResource MenuTextLink}"/>
                     <TextBlock Text="科目マスタ" Style="{StaticResource MenuTextLink}"/>

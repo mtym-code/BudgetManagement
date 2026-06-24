@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -48,6 +49,13 @@ namespace BudgetManagement.Views
         private void ExpenseNonOperatingForecast_Click(object sender, RoutedEventArgs e)
         {
             this.NavigationService.Navigate(new ExpenseNonOperatingForecastPage());
+        }
+
+        private void BudgetOperationMaster_Click(object sender, RoutedEventArgs e)
+        {
+            // DIコンテナ（App.xaml.cs などで定義）から ViewModel と Page を取得して遷移する例
+            var page = App.ServiceProvider.GetRequiredService<BudgetOperationMasterPage>();
+            this.NavigationService.Navigate(page);
         }
     }
 }

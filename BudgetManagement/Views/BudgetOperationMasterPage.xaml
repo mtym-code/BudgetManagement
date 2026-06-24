@@ -145,16 +145,16 @@
                 <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
                     <StackPanel Orientation="Horizontal" Margin="0,0,40,8">
                         <TextBlock Text="入力完了（担当）" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="15" Foreground="#4B5563"/>
-                        <RadioButton Content="全て" IsChecked="{Binding InputStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=All}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="入力完" IsChecked="{Binding InputStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Done}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="未完了" IsChecked="{Binding InputStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=NotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="全て" IsChecked="{Binding IsInputFilterAll}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="入力完" IsChecked="{Binding IsInputFilterDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="未完了" IsChecked="{Binding IsInputFilterNotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,0,40,8">
                         <TextBlock Text="送信" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="15" Foreground="#4B5563"/>
-                        <RadioButton Content="全て" IsChecked="{Binding SendStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=All}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="送信済" IsChecked="{Binding SendStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Done}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="未完了" IsChecked="{Binding SendStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=NotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="全て" IsChecked="{Binding IsSendFilterAll}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="送信済" IsChecked="{Binding IsSendFilterDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="未完了" IsChecked="{Binding IsSendFilterNotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
                     </StackPanel>
                 </WrapPanel>
 
@@ -175,9 +175,52 @@
         <DataGrid Grid.Row="2" ItemsSource="{Binding OperationItems}" AutoGenerateColumns="False" 
                   CanUserAddRows="False" HeadersVisibility="Column" Background="White" BorderBrush="#D1D5DB"
                   RowHeight="36" ColumnHeaderHeight="40" FontSize="14" AlternatingRowBackground="#F9FAFB">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="組織コード" Binding="{Binding OrgCode}" IsReadOnly="True" Width="100"/>
+                <DataGridTextColumn Header="組織名" Binding="{Binding OrgName}" IsReadOnly="True" Width="200"/>
+
+                <DataGridCheckBoxColumn Header="入力完了（担当）" Binding="{Binding IsStaffInputCompleted, UpdateSourceTrigger=PropertyChanged}" Width="120">
+                    <DataGridCheckBoxColumn.ElementStyle>
+                        <Style TargetType="CheckBox">
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridCheckBoxColumn.ElementStyle>
+                </DataGridCheckBoxColumn>
+                <DataGridTextColumn Header="担当者名" Binding="{Binding StaffHandlerName}" IsReadOnly="True" Width="150"/>
+
+                <DataGridCheckBoxColumn Header="送信フラグ" Binding="{Binding IsSendFlag, UpdateSourceTrigger=PropertyChanged}" Width="100">
+                    <DataGridCheckBoxColumn.ElementStyle>
+                        <Style TargetType="CheckBox">
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridCheckBoxColumn.ElementStyle>
+                </DataGridCheckBoxColumn>
+                <DataGridTextColumn Header="送信者名" Binding="{Binding SendHandlerName}" IsReadOnly="True" Width="150"/>
+
+                <DataGridCheckBoxColumn Header="送信済" Binding="{Binding IsSendDone}" IsReadOnly="True" Width="80">
+                    <DataGridCheckBoxColumn.ElementStyle>
+                        <Style TargetType="CheckBox">
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridCheckBoxColumn.ElementStyle>
+                </DataGridCheckBoxColumn>
+                <DataGridTextColumn Header="前回送信日時" Binding="{Binding LastSendDateTime}" IsReadOnly="True" Width="180"/>
+            </DataGrid.Columns>
         </DataGrid>
 
         <Popup IsOpen="{Binding IsLoading}" PlacementTarget="{Binding ElementName=MainRoot}" Placement="Center" AllowsTransparency="True">
+            <Border Background="White" CornerRadius="8" Padding="32,24" BorderBrush="#D1D5DB" BorderThickness="1">
+                <Border.Effect>
+                    <DropShadowEffect ShadowDepth="4" BlurRadius="16" Opacity="0.2"/>
+                </Border.Effect>
+                <StackPanel>
+                    <ProgressBar IsIndeterminate="True" Width="240" Height="6" Foreground="#2563EB" BorderThickness="0" Margin="0,0,16,0"/>
+                    <TextBlock Text="処理中です..." Foreground="#111827" FontSize="15" FontWeight="Bold" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
         </Popup>
     </Grid>
 </Page>
