@@ -146,7 +146,7 @@
                     <TextBlock Text="見通し予算" FontSize="12" FontWeight="Bold" Foreground="#9CA3AF" Padding="16,4,16,0"/>
                     <TextBlock Text="社内売上仕入" Style="{StaticResource MenuTextLink}"/>
                     <TextBlock Text="課別営業予算" Style="{StaticResource MenuTextLink}"/>
-                    <TextBlock Text="経費・営業外" Style="{StaticResource MenuTextLink}"/>
+                    <TextBlock Text="経費・営業外" Style="{StaticResource MenuTextLink}" MouseLeftButtonDown="ExpenseNonOperatingForecastLink_Click"/>
 
                     <Border Height="1" Background="#E5E7EB" Margin="0,4"/>
 

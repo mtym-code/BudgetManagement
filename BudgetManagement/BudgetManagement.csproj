@@ -11,6 +11,12 @@
   <ItemGroup>
     <None Remove="appsettings.json" />
     <None Remove="Templates\BudgetTemplate.xlsx" />
+    <None Include="Templates\DepartmentBudgetTemplate.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="Templates\InternalSalesTemplate.xlsx">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
@@ -21,12 +27,6 @@
 
   <ItemGroup>
     <EmbeddedResource Include="Sql\**\*.sql" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Content Include="Templates\BudgetTemplate.xlsx">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -41,6 +41,12 @@
     <PackageReference Include="Npgsql" Version="10.0.3" />
     <PackageReference Include="Serilog" Version="4.3.1" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Templates\ExpenseNonOperatingForecastTemplate.xlsx">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

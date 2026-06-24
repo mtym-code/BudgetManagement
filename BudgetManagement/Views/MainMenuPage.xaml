@@ -88,9 +88,8 @@
                         <WrapPanel>
                             <Button Style="{StaticResource MenuButton}" Content="社内売上仕入"/>
                             <Button Style="{StaticResource MenuButton}" Content="課別営業予算"/>
-                            <Button Style="{StaticResource MenuButton}" Content="経費・営業外"/>
+                            <Button Style="{StaticResource MenuButton}" Content="経費・営業外" Click="ExpenseNonOperatingForecast_Click"/>
                         </WrapPanel>
-
                         <TextBlock Text="照会・その他" FontSize="20" FontWeight="Bold" Foreground="#4B5563" Margin="0,24,0,14"/>
                         <WrapPanel>
                             <Button Style="{StaticResource MenuButton}" Content="照会"/>

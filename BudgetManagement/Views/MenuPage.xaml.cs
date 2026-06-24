@@ -53,5 +53,18 @@ namespace BudgetManagement.Views
             // ⭕ 中央のカードの中身（MainFrame）を差し替える
             MainFrame.Navigate(new SampleView());
         }
+
+        // ▼ 新規追加：経費営業外見通しリンククリック時 ▼
+        /// <summary>
+        /// ドロップダウンメニュー内の「経費・営業外」リンククリック時
+        /// </summary>
+        private void ExpenseNonOperatingForecastLink_Click(object sender, MouseButtonEventArgs e)
+        {
+            // ドロップダウンを閉じる
+            NavBudgetPopup.IsOpen = false;
+            
+            // 中央のカードの中身を 経費営業外見通し画面 に差し替える
+            MainFrame.Navigate(new ExpenseNonOperatingForecastPage());
+        }
     }
 }

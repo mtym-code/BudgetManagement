@@ -43,5 +43,11 @@ namespace BudgetManagement.Views
         {
             this.NavigationService.Navigate(new SampleView());
         }
+        
+        // ▼ 新規追加：経費営業外見通し画面へ遷移 ▼
+        private void ExpenseNonOperatingForecast_Click(object sender, RoutedEventArgs e)
+        {
+            this.NavigationService.Navigate(new ExpenseNonOperatingForecastPage());
+        }
     }
 }

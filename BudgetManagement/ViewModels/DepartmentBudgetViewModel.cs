@@ -1,15 +1,15 @@
 ﻿using BudgetManagement.Models;
 using BudgetManagement.Services;
-using ClosedXML.Excel;
+using BudgetManagement.Views;
+using BudgetManagement.Common;
+using BudgetManagement.Common.Constants;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -17,99 +17,102 @@ namespace BudgetManagement.ViewModels
 {
     public partial class DepartmentBudgetViewModel : ObservableObject
     {
+        private const string DummyDeleteFlag = "false";
+
         private readonly DepartmentBudgetService _service;
-        // Import用のサービス
         private readonly DepartmentBudgetImportService _importService;
+        private readonly DepartmentBudgetExcelService _excelService;
+        private readonly DepartmentBudgetHtmlService _htmlService;
 
-        [ObservableProperty]
-        private string _year = string.Empty;
-
-        [ObservableProperty]
-        private string _companyCode = string.Empty;
-
-        [ObservableProperty]
-        private string _companyName = string.Empty;
-
-        [ObservableProperty]
-        private string? _statusText;
-
-        [ObservableProperty]
-        private ObservableCollection<SectionInfo> _sections = new();
-
-        [ObservableProperty]
-        private SectionInfo? _selectedSection;
-
-        [ObservableProperty]
-        private string _sectionSearchText = string.Empty;
-
-        public bool IsValidSectionName(string name)
-        {
-            return _allSections.Any(s => s.DisplayName == name);
-        }
-
-        private List<SectionInfo> _allSections = new();
+        private readonly DepartmentSearchContext _searchContext = new();
 
         // =========================================================
-        // ★追加: Excel取り込みプレビュー用のプロパティ
+        // ★修正：防護壁が不要になったため、すべてスッキリとした自動生成プロパティに戻しました！
         // =========================================================
-        [ObservableProperty]
-        private string _importYearInfo = string.Empty;
+        [ObservableProperty] private bool _isCurrentBudgetTabSelected = true;
+        [ObservableProperty] private bool _isImportTabSelected = false;
 
-        [ObservableProperty]
-        private string _importCompanyInfo = string.Empty;
+        [ObservableProperty] private SectionInfo? _selectedSection;
+        [ObservableProperty] private string _sectionSearchText = string.Empty;
 
-        [ObservableProperty]
-        private string _importSectionInfo = string.Empty;
+        [ObservableProperty] private string _year = string.Empty;
+        [ObservableProperty] private string _companyCode = string.Empty;
+        [ObservableProperty] private string _companyName = string.Empty;
+        [ObservableProperty] private string? _statusText;
+        [ObservableProperty] private ObservableCollection<SectionInfo> _sections = new();
+        [ObservableProperty] private Visibility _dbPreviewPlaceholderVisibility = Visibility.Visible;
+        [ObservableProperty] private bool _isPreviewLoading = false;
+        [ObservableProperty] private bool _isCompleteButtonEnabled = false;
+        [ObservableProperty] private bool _isCommitButtonEnabled = false;
+        [ObservableProperty] private string _importYearInfo = string.Empty;
+        [ObservableProperty] private string _importCompanyInfo = string.Empty;
+        [ObservableProperty] private string _importSectionInfo = string.Empty;
+        [ObservableProperty] private string? _importStatusText;
+        [ObservableProperty] private ObservableCollection<ImportedBudgetData> _importedDataList = new();
+        [ObservableProperty] private bool _isLoading;
+        [ObservableProperty] private Visibility _webViewVisibility = Visibility.Visible;
 
-        [ObservableProperty]
-        private ObservableCollection<ImportedBudgetData> _importedDataList = new();
+        public bool IsNotLoading => !IsLoading && !IsPreviewLoading;
 
-        // 内部で保持しておく、DB保存用のデータ本体
         private ImportResult? _currentImportResult;
 
-        // ViewにHTML描画を依頼するためのイベント
         public event EventHandler<string>? HtmlRenderRequested;
+        public event EventHandler<string>? DbHtmlRenderRequested;
 
-        // ★修正箇所：引数に DepartmentBudgetImportService を追加しました
-        public DepartmentBudgetViewModel(DepartmentBudgetService service, DepartmentBudgetImportService importService)
+        public DepartmentBudgetViewModel(
+            DepartmentBudgetService service,
+            DepartmentBudgetImportService importService,
+            DepartmentBudgetExcelService excelService,
+            DepartmentBudgetHtmlService htmlService)
         {
             _service = service;
             _importService = importService;
+            _excelService = excelService;
+            _htmlService = htmlService;
         }
 
-        // =========================================================
-        // 年度入力時
-        // =========================================================
+        partial void OnIsLoadingChanged(bool value) => UpdateWebViewVisibility();
+        partial void OnIsPreviewLoadingChanged(bool value) => UpdateWebViewVisibility();
+
+        private void UpdateWebViewVisibility() => WebViewVisibility = (IsLoading || IsPreviewLoading) ? Visibility.Hidden : Visibility.Visible;
+
+        public bool IsValidSectionName(string name) => _searchContext.AllSections.Any(s => s.DisplayName == name);
+
         [RelayCommand]
         private async Task HandleYearLostFocusAsync()
         {
-            if (string.IsNullOrWhiteSpace(Year)) return;
+            if (string.IsNullOrWhiteSpace(Year) || Year == _searchContext.LastSearchedYear) return;
+            _searchContext.LastSearchedYear = Year;
 
             try
             {
-                var companies = await _service.GetCompaniesByYearAsync(Year);
-                var companyList = companies.ToList();
+                var companyList = (await _service.GetCompaniesByYearAsync(Year)).ToList();
+
+                _searchContext.Clear();
+                CompanyCode = string.Empty;
+                CompanyName = string.Empty;
 
                 if (companyList.Any())
                 {
-                    CompanyCode = companyList[0].CompanyCode;
-                    CompanyName = companyList[0].CompanyName;
-
-                    var sectionList = await _service.GetSectionsAsync(Year, CompanyCode);
-                    _allSections = sectionList.ToList();
+                    foreach (var comp in companyList)
+                    {
+                        var sectionList = await _service.GetSectionsAsync(Year, comp.CompanyCode);
+                        foreach (var section in sectionList)
+                        {
+                            _searchContext.AllSections.Add(section);
+                            _searchContext.SectionCompanyMap[section.SectionCode] = (comp.CompanyCode, comp.CompanyName);
+                        }
+                    }
 
                     SectionSearchText = string.Empty;
                     SelectedSection = null;
                     StatusText = null;
-
-                    Sections = new ObservableCollection<SectionInfo>(_allSections);
+                    Sections = new ObservableCollection<SectionInfo>(_searchContext.AllSections);
                 }
                 else
                 {
-                    CompanyCode = string.Empty;
-                    CompanyName = "該当会社なし";
-                    _allSections.Clear();
-                    Sections = new ObservableCollection<SectionInfo>();
+                    CompanyName = "該当データなし";
+                    Sections = new();
                     SectionSearchText = string.Empty;
                     SelectedSection = null;
                     StatusText = null;
@@ -117,230 +120,125 @@ namespace BudgetManagement.ViewModels
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"組織データの取得に失敗しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                CustomMessageBox.Show($"組織データの取得に失敗しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        // =========================================================
-        // 課の選択確定時
-        // =========================================================
         [RelayCommand]
         private async Task HandleSectionChangedAsync()
         {
-            if (SelectedSection == null || string.IsNullOrEmpty(CompanyCode)) return;
+            if (SelectedSection == null) return;
+            if (_searchContext.SectionCompanyMap.TryGetValue(SelectedSection.SectionCode, out var compInfo))
+            {
+                CompanyCode = compInfo.Code;
+                CompanyName = compInfo.Name;
+            }
+            if (string.IsNullOrEmpty(CompanyCode)) return;
+
+            DbPreviewPlaceholderVisibility = Visibility.Visible;
+            IsPreviewLoading = true;
+            await Task.Delay(50);
 
             try
             {
                 bool isCompleted = await _service.GetManagementInputFlagsAsync(Year, CompanyCode, SelectedSection.SectionCode);
-                StatusText = isCompleted ? "確定済" : "未確定";
+                StatusText = isCompleted ? StatusConstants.Completed : StatusConstants.Uncompleted;
+
+                var dbData = await _service.GetBudgetDataForExcelAsync(Year, CompanyCode, SelectedSection.SectionCode);
+                var dataList = dbData?.Cast<dynamic>().ToList();
+                bool hasData = dataList != null && dataList.Any();
+
+                IsCompleteButtonEnabled = !isCompleted && hasData;
+
+                string html = await Task.Run(() =>
+                {
+                    if (!hasData) return "<html><body style='padding:40px; text-align:center;'><h3>データがありません</h3></body></html>";
+
+                    string tempFilePath = Path.Combine(Path.GetTempPath(), $"Preview_{Guid.NewGuid()}.xlsx");
+                    string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "DepartmentBudgetTemplate.xlsx");
+
+                    try
+                    {
+                        _excelService.CreatePreviewExcel(templatePath, tempFilePath, dataList!);
+                        return _htmlService.GenerateHtmlFromExcel(tempFilePath, SessionManager.OperationType, false);
+                    }
+                    finally { if (File.Exists(tempFilePath)) { try { File.Delete(tempFilePath); } catch { } } }
+                });
+
+                DbHtmlRenderRequested?.Invoke(this, html);
+                DbPreviewPlaceholderVisibility = Visibility.Collapsed;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"入力完了状態のチェックに失敗しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (Exception ex) { CustomMessageBox.Show($"データの取得に失敗しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error); }
+            finally { IsPreviewLoading = false; }
         }
 
-        // =========================================================
-        // クリアボタン
-        // =========================================================
         [RelayCommand]
-        private void ClearFields()
+        private async Task CompleteInputAsync()
         {
-            _allSections.Clear();
-            Sections = new ObservableCollection<SectionInfo>();
+            if (SelectedSection == null || string.IsNullOrEmpty(CompanyCode)) return;
 
-            SectionSearchText = string.Empty;
-            SelectedSection = null;
-            StatusText = null;
+            var result = CustomMessageBox.Show("現在の内容で「入力完了（確定）」とします。\nよろしいですか？", "最終確定の確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes) return;
 
-            Year = string.Empty;
-            CompanyCode = string.Empty;
-            CompanyName = string.Empty;
+            await ExecuteWithLoadingAsync(
+                action: async () =>
+                {
+                    await _service.UpsertStaffInputStatusAsync(Year, CompanyCode, SelectedSection.SectionCode, SessionManager.UserId, DummyDeleteFlag, SessionManager.UserId, DateTime.Now, SessionManager.UserId, DateTime.Now);
+                },
+                successMessage: "入力を完了し、データを確定しました。",
+                errorMessage: "確定処理中にエラーが発生しました:\n{0}",
+                successTitle: "確定完了"
+            );
+
+            await HandleSectionChangedAsync();
         }
 
-        // =========================================================
-        // 状態テキストのクリア制御
-        // =========================================================
-        partial void OnSelectedSectionChanged(SectionInfo? value)
-        {
-            if (value == null && string.IsNullOrWhiteSpace(SectionSearchText))
-            {
-                StatusText = null;
-            }
-        }
-
-        // =========================================================
-        // 文字入力時の絞り込み
-        // =========================================================
-        partial void OnSectionSearchTextChanged(string value)
-        {
-            if (string.IsNullOrWhiteSpace(value))
-            {
-                SelectedSection = null;
-                StatusText = null;
-                Sections = new ObservableCollection<SectionInfo>(_allSections);
-                return;
-            }
-
-            var exactMatch = _allSections.FirstOrDefault(s => s.DisplayName == value);
-            if (exactMatch != null)
-            {
-                SelectedSection = exactMatch;
-                return;
-            }
-
-            SelectedSection = null;
-            StatusText = null;
-
-            var filtered = _allSections.Where(s => s.DisplayName.StartsWith(value, StringComparison.OrdinalIgnoreCase)).ToList();
-            Sections = new ObservableCollection<SectionInfo>(filtered);
-        }
-
-        // =========================================================
-        // Excel出力処理
-        // =========================================================
         [RelayCommand]
         private async Task ExportExcelAsync()
         {
-            // 既存のバリデーションを維持
             if (string.IsNullOrEmpty(Year) || SelectedSection == null)
             {
-                MessageBox.Show("年度と課を選択してから実行してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
+                CustomMessageBox.Show("年度と課を選択してから実行してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Warning); return;
             }
 
-            // 保存先のダイアログ確認
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var dialog = new Microsoft.Win32.SaveFileDialog
             {
                 Title = "予算出力ファイルの保存先を選択してください",
                 Filter = "Excel Worksheets (*.xlsx)|*.xlsx",
-                // ご提案の「部門別予算_年度_課コード_課名称_タイムスタンプ.xlsx」フォーマット
-                FileName = $"部門別予算_{Year}_{SelectedSection.SectionCode}_{SelectedSection.SectionName}_{timestamp}.xlsx"
+                FileName = $"部門別予算_{Year}_{SelectedSection.SectionCode}_{SelectedSection.SectionName}_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx"
             };
 
             if (dialog.ShowDialog() != true) return;
 
             string outputPath = dialog.FileName;
-            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "BudgetTemplate.xlsx");
+            string templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Templates", "DepartmentBudgetTemplate.xlsx");
 
-            try
-            {
-                var budgetDataList = await _service.GetBudgetDataForExcelAsync(Year, CompanyCode, SelectedSection.SectionCode);
-
-                var budgetDataDict = budgetDataList.ToDictionary(
-                    x => $"{x.AccountCode}_{x.SubAccountCode}",
-                    x => x
-                );
-
-                // UIをフリーズさせないよう非同期タスク内でExcel操作
-                await Task.Run(() =>
+            await ExecuteWithLoadingAsync(
+                action: async () =>
                 {
-                    File.Copy(templatePath, outputPath, true);
+                    var budgetDataList = await _service.GetBudgetDataForExcelAsync(Year, CompanyCode, SelectedSection.SectionCode);
+                    string currentOperationType = SessionManager.OperationType;
+                    string sectionDisplayName = SelectedSection.DisplayName;
 
-                    using (var workbook = new XLWorkbook(outputPath))
+                    await Task.Run(() =>
                     {
-                        // 各シート共通で出力する値の準備
-                        string exportDate = DateTime.Now.ToString("yyyy-MM-dd");
-                        string reportTitle = "部門別経費予算";
-                        string sectionDisplayName = SelectedSection.DisplayName;
-
-                        // 1. Settingsシートの更新
-                        if (workbook.TryGetWorksheet("Settings", out var settingsSheet))
-                        {
-                            settingsSheet.Cell("B1").Value = exportDate;   // 出力日
-                            settingsSheet.Cell("B4").Value = reportTitle;  // タイトル
-                            settingsSheet.Cell("B5").Value = Year;         // 年度
-                            settingsSheet.Cell("B6").Value = $"{CompanyCode}：{CompanyName}"; // 会社情報
-                            settingsSheet.Cell("B7").Value = sectionDisplayName; // 課情報
-                            settingsSheet.Hide();   // シート非表示
-                        }
-
-                        // 2. 部門別経費予算シートの更新
-                        if (workbook.TryGetWorksheet("部門別経費予算", out var worksheet))
-                        {
-                            int lastRow = worksheet.LastRowUsed().RowNumber();
-
-                            // 6行目以降の予算データ出力
-                            for (int row = 6; row <= lastRow; row++)
-                            {
-                                // ★追加：E列の値（フラグ）を取得
-                                string targetFlag = worksheet.Cell(row, "E").GetString()?.Trim() ?? string.Empty;
-
-                                // ★仕様変更：E列が「Y」以外の行はスキップ（大文字・小文字を区別せず安全に判定）
-                                if (!targetFlag.Equals("Y", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    continue;
-                                }
-                                // E列が「Y」の行のみ、科目・細目コードを取得する
-                                string accountCode = worksheet.Cell(row, "H").GetString()?.Trim() ?? string.Empty;
-                                string subAccountCode = worksheet.Cell(row, "I").GetString()?.Trim() ?? string.Empty;
-
-                                // 1. 値が未設定（空欄）の場合は、未入力行とみなしてスキップ
-                                if (string.IsNullOrEmpty(accountCode) || string.IsNullOrEmpty(subAccountCode))
-                                {
-                                    continue;
-                                }
-
-                                // 2. 値が入力されている場合、それが数字（数値）かどうかをチェック
-                                // ※入力ミス等で文字が入っていた場合はスキップする
-                                if (!int.TryParse(accountCode, out _) || !int.TryParse(subAccountCode, out _))
-                                {
-                                    continue;
-                                }
-
-                                string searchKey = $"{accountCode}_{subAccountCode}";
-
-                                // 辞書からデータを検索して出力
-                                if (budgetDataDict.TryGetValue(searchKey, out var rowData))
-                                {
-                                    // 上期：4月(M) ～ 9月(R)
-                                    worksheet.Cell(row, "M").Value = rowData.Month04;
-                                    worksheet.Cell(row, "N").Value = rowData.Month05;
-                                    worksheet.Cell(row, "O").Value = rowData.Month06;
-                                    worksheet.Cell(row, "P").Value = rowData.Month07;
-                                    worksheet.Cell(row, "Q").Value = rowData.Month08;
-                                    worksheet.Cell(row, "R").Value = rowData.Month09;
-
-                                    // 下期：10月(T) ～ 3月(Y)
-                                    worksheet.Cell(row, "T").Value = rowData.Month10;
-                                    worksheet.Cell(row, "U").Value = rowData.Month11;
-                                    worksheet.Cell(row, "V").Value = rowData.Month12;
-                                    worksheet.Cell(row, "W").Value = rowData.Month01;
-                                    worksheet.Cell(row, "X").Value = rowData.Month02;
-                                    worksheet.Cell(row, "Y").Value = rowData.Month03;
-                                }
-                            }
-                        }
-                        workbook.Save();
-                    }
-                });
-
-                MessageBox.Show($"Excelを出力しました。\n保存先: {outputPath}", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"出力中にエラーが発生しました:\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+                        _excelService.ExportBudgetExcel(templatePath, outputPath, Year, CompanyCode, CompanyName, sectionDisplayName, currentOperationType, budgetDataList);
+                    });
+                },
+                successMessage: $"Excelを出力しました。\n保存先: {outputPath}",
+                errorMessage: "出力中にエラーが発生しました:\n{0}"
+            );
         }
 
-        // =========================================================
-        // ★変更: Excelファイル取り込み処理（プレビューのみ）
-        // =========================================================
         [RelayCommand]
         private async Task SelectAndImportFileAsync()
         {
-            var dialog = new OpenFileDialog
-            {
-                Filter = "Excel Files|*.xlsx;*.xlsm",
-                Title = "部門別経費予算ファイルを選択"
-            };
+            var dialog = new OpenFileDialog { Filter = "Excel Files|*.xlsx;*.xlsm", Title = "部門別経費予算ファイルを選択" };
 
             if (dialog.ShowDialog() == true)
             {
                 try
                 {
-                    // 1. データの取り込みは今まで通り（明細だけをDB用に取得）
                     _currentImportResult = await _importService.ReadExcelAsync(dialog.FileName);
 
                     ImportYearInfo = _currentImportResult.Year;
@@ -348,190 +246,135 @@ namespace BudgetManagement.ViewModels
                     ImportSectionInfo = _currentImportResult.SectionInfo;
                     ImportedDataList = new ObservableCollection<ImportedBudgetData>(_currentImportResult.Details);
 
-                    // 2. ★【ここを変更】すでにプロジェクトにあるClosedXMLを使って、
-                    //    Excelのシートを「合計行や関数結果も入った状態」でHTMLに変換する
-                    string html = GenerateHtmlFromExcel(dialog.FileName);
+                    string importCompanyCode = _currentImportResult.CompanyInfo.Split('：', ':')[0].Trim();
+                    bool isCompleted = await _service.GetManagementInputFlagsAsync(_currentImportResult.Year, importCompanyCode, _currentImportResult.SectionCode);
+                    ImportStatusText = isCompleted ? StatusConstants.Completed : StatusConstants.Uncompleted;
 
-                    // 3. View（WebView2）へ通知
+                    string html = _htmlService.GenerateHtmlFromExcel(dialog.FileName, SessionManager.OperationType, true);
                     HtmlRenderRequested?.Invoke(this, html);
 
-                    MessageBox.Show("ファイルの読み込みが完了しました。\n内容を確認後、「確定」ボタンを押して登録してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Information);
+                    if (isCompleted)
+                    {
+                        IsCommitButtonEnabled = false;
+                        CustomMessageBox.Show("入力完了のデータは更新できません。", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                    }
+                    else
+                    {
+                        IsCommitButtonEnabled = true;
+                        CustomMessageBox.Show("ファイルの読み込みが完了しました。\n内容を確認後、「DBへ保存」ボタンを押して仮登録してください。", "確認", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
                 }
-                // ★ ユーザーが直せる「業務エラー」の捕捉 (警告アイコン)
-                catch (BudgetManagement.Common.Exceptions.ImportValidationException ex)
-                {
-                    MessageBox.Show(ex.Message, "データ確認のお願い", MessageBoxButton.OK, MessageBoxImage.Warning);
-                }
-                // ★ Excelを開きっぱなしなどのエラー捕捉
-                catch (IOException ex)
-                {
-                    MessageBox.Show("ファイルにアクセスできません。Excelでファイルを開いている場合は閉じてください。\n" + ex.Message, "ファイル読み込みエラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-                // ★ 予期せぬシステムエラーの捕捉 (エラーアイコン)
-                catch (Exception ex)
-                {
-                    MessageBox.Show($"システムエラーが発生しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                catch (BudgetManagement.Common.Exceptions.ImportValidationException ex) { CustomMessageBox.Show(ex.Message, "データ確認のお願い", MessageBoxButton.OK, MessageBoxImage.Warning); }
+                catch (IOException ex) { CustomMessageBox.Show("ファイルにアクセスできません。\n" + ex.Message, "ファイル読み込みエラー", MessageBoxButton.OK, MessageBoxImage.Error); }
+                catch (Exception ex) { CustomMessageBox.Show($"システムエラーが発生しました。\n{ex.Message}", "エラー", MessageBoxButton.OK, MessageBoxImage.Error); }
             }
         }
 
-        // =========================================================
-        // ★新規追加: 確定ボタン（DB更新）処理
-        // =========================================================
         [RelayCommand]
         private async Task CommitImportAsync()
         {
-            if (_currentImportResult == null || !ImportedDataList.Any())
+            if (ImportStatusText == StatusConstants.Completed) return;
+            var result = CustomMessageBox.Show("表示されている内容でデータベースに仮保存します。よろしいですか？", "更新確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (result != MessageBoxResult.Yes) return;
+
+            string savedYear = _currentImportResult!.Year;
+            string savedSectionCode = _currentImportResult.SectionCode;
+
+            await ExecuteWithLoadingAsync(
+                action: async () => { await _importService.SaveImportDataAsync(_currentImportResult, SessionManager.UserId); },
+                successMessage: "データベースへ仮保存しました。\n全体を確認して「入力完了」を行ってください。",
+                errorMessage: "更新処理中にエラーが発生しました。\n{0}", successTitle: "保存完了", errorTitle: "重大なエラー"
+            );
+
+            _currentImportResult = null;
+            ImportYearInfo = string.Empty; ImportCompanyInfo = string.Empty; ImportSectionInfo = string.Empty; ImportStatusText = null;
+            ImportedDataList.Clear(); IsCommitButtonEnabled = false; HtmlRenderRequested?.Invoke(this, string.Empty);
+
+            // ★保存完了後、タブを切り替えてから、取り込んだ年度と課をセットする
+            IsCurrentBudgetTabSelected = true;
+
+            Year = savedYear;
+            _searchContext.LastSearchedYear = string.Empty;
+            await HandleYearLostFocusAsync();
+
+            SelectedSection = Sections.FirstOrDefault(s => s.SectionCode == savedSectionCode);
+            if (SelectedSection != null) await HandleSectionChangedAsync();
+        }
+
+        [RelayCommand]
+        private void ClearFields()
+        {
+            _searchContext.Clear();
+            Sections = new(); SectionSearchText = string.Empty; SelectedSection = null; StatusText = null;
+            Year = string.Empty; CompanyCode = string.Empty; CompanyName = string.Empty;
+            ImportYearInfo = string.Empty; ImportCompanyInfo = string.Empty; ImportSectionInfo = string.Empty; ImportStatusText = null;
+            ImportedDataList.Clear(); _currentImportResult = null;
+            IsCompleteButtonEnabled = false; IsPreviewLoading = false; IsCommitButtonEnabled = false;
+            DbHtmlRenderRequested?.Invoke(this, string.Empty); HtmlRenderRequested?.Invoke(this, string.Empty);
+            DbPreviewPlaceholderVisibility = Visibility.Visible;
+        }
+
+        // =========================================================
+        // ★修正：検索ロジックもシンプルに元通り
+        // =========================================================
+        partial void OnSelectedSectionChanged(SectionInfo? value)
+        {
+            if (value == null && string.IsNullOrWhiteSpace(SectionSearchText)) StatusText = null;
+        }
+
+        partial void OnSectionSearchTextChanged(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
             {
-                MessageBox.Show("取り込みデータがありません。先にファイルを選択して読み込んでください。", "確認", MessageBoxButton.OK, MessageBoxImage.Warning);
+                SelectedSection = null; StatusText = null;
+                if (Sections.Count != _searchContext.AllSections.Count)
+                {
+                    Sections = new ObservableCollection<SectionInfo>(_searchContext.AllSections);
+                }
+                return;
+            }
+            var exactMatch = _searchContext.AllSections.FirstOrDefault(s => s.DisplayName == value);
+            if (exactMatch != null)
+            {
+                SelectedSection = exactMatch;
                 return;
             }
 
-            // DB更新の意思確認
-            var result = MessageBox.Show("表示されている内容でデータベースを更新します。よろしいですか？", "更新確認", MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result != MessageBoxResult.Yes) return;
+            SelectedSection = null; StatusText = null;
+            Sections = new ObservableCollection<SectionInfo>(_searchContext.AllSections.Where(s => s.DisplayName.StartsWith(value, StringComparison.OrdinalIgnoreCase)).ToList());
+        }
+
+        private async Task ExecuteWithLoadingAsync(Func<Task> action, string successMessage, string errorMessage, string successTitle = "完了", string errorTitle = "エラー")
+        {
+            IsLoading = true;
+            await Task.Delay(500);
+
+            bool isSuccess = false;
+            string errorText = string.Empty;
 
             try
             {
-                string currentUserId = "U0001"; // ※一時的なダミーID
-
-                await _importService.SaveImportDataAsync(_currentImportResult, currentUserId);
-
-                MessageBox.Show("データベースの更新が完了しました。", "完了", MessageBoxButton.OK, MessageBoxImage.Information);
-
-                // 更新完了後はプレビュー領域をクリアする
-                _currentImportResult = null;
-                ImportYearInfo = string.Empty;
-                ImportCompanyInfo = string.Empty;
-                ImportSectionInfo = string.Empty;
-                ImportedDataList.Clear();
+                await action();
+                isSuccess = true;
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"更新処理中にエラーが発生しました。\n{ex.Message}", "重大なエラー", MessageBoxButton.OK, MessageBoxImage.Error);
+                errorText = ex.Message;
             }
-        }
-        private string RenderHtmlPreview(ImportResult importResult)
-        {
-            var html = new StringBuilder();
-            html.Append("<html><head><style>");
-            html.Append("table { border-collapse: collapse; width: 100%; font-family: 'Segoe UI', sans-serif; } ");
-            html.Append("th { background-color: #F3F4F6; border: 1px solid #D1D5DB; padding: 8px; font-size: 13px; text-align: center; } ");
-            html.Append("td { border: 1px solid #E5E7EB; padding: 8px; font-size: 13px; text-align: right; } ");
-            html.Append(".text-left { text-align: left; } ");
-            html.Append(".target-y { background-color: #e6fffa; }");
-            html.Append("</style></head><body>");
-
-            // ヘッダー行
-            html.Append("<table><tr><th>科目</th><th>細目</th><th>4月</th><th>5月</th><th>6月</th><th>7月</th><th>8月</th><th>9月</th><th>10月</th><th>11月</th><th>12月</th><th>1月</th><th>2月</th><th>3月</th></tr>");
-
-            if (importResult?.Details != null)
+            finally
             {
-                foreach (var row in importResult.Details)
-                {
-                    // データ行 (E列のフラグ等で背景色を変える場合は、ここで <tr> のクラスを調整できます)
-                    html.Append("<tr>");
-                    html.Append($"<td class='text-left'>{row.AccountCode}</td>");
-                    html.Append($"<td class='text-left'>{row.SubAccountCode}</td>");
-                    html.Append($"<td>{row.Month04}</td>");
-                    html.Append($"<td>{row.Month05}</td>");
-                    html.Append($"<td>{row.Month06}</td>");
-                    html.Append($"<td>{row.Month07}</td>");
-                    html.Append($"<td>{row.Month08}</td>");
-                    html.Append($"<td>{row.Month09}</td>");
-                    html.Append($"<td>{row.Month10}</td>");
-                    html.Append($"<td>{row.Month11}</td>");
-                    html.Append($"<td>{row.Month12}</td>");
-                    html.Append($"<td>{row.Month01}</td>");
-                    html.Append($"<td>{row.Month02}</td>");
-                    html.Append($"<td>{row.Month03}</td>");
-                    html.Append("</tr>");
-                }
+                IsLoading = false;
+                await Task.Delay(100);
             }
-            html.Append("</table></body></html>");
 
-            return html.ToString();
-        }
-        private string GenerateHtmlFromExcel(string filePath)
-        {
-            var html = new StringBuilder();
-            html.Append("<html><head><style>");
-            html.Append("table { border-collapse: collapse; width: 100%; font-family: 'Segoe UI', sans-serif; } ");
-            html.Append("th, td { border: 1px solid #D1D5DB; padding: 6px; font-size: 12px; } ");
-            html.Append("th { background-color: #F3F4F6; font-weight: bold; text-align: center; } ");
-            html.Append(".text-left { text-align: left; } ");
-            html.Append(".text-right { text-align: right; } ");
-            html.Append("</style></head><body><table>");
-
-            using (var workbook = new XLWorkbook(filePath))
+            if (isSuccess && !string.IsNullOrEmpty(successMessage))
             {
-                var worksheet = workbook.Worksheets.First();
-
-                int lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 4;
-                int lastColumn = worksheet.LastColumnUsed()?.ColumnNumber() ?? 7;
-
-                // ★結合に巻き込まれて「表示をスキップすべきセル」を記録するお留守番リスト
-                var skippedCells = new HashSet<string>();
-                bool isFirstRow = true;
-
-                for (int r = 4; r <= lastRow; r++)
-                {
-                    var row = worksheet.Row(r);
-                    html.Append("<tr>");
-
-                    for (int c = 7; c <= lastColumn; c++)
-                    {
-                        var cell = row.Cell(c);
-                        string cellAddress = cell.Address.ToString(); // 例: "G4"
-
-                        // ★すでに結合の一部として処理済みのセル（H4など）なら、HTMLに出さずにスルー
-                        if (skippedCells.Contains(cellAddress))
-                        {
-                            continue;
-                        }
-
-                        string displayValue = cell.GetFormattedString();
-                        string mergeAttributes = ""; // colspanやrowspanを入れる文字列
-
-                        // ★Excel側でセルが結合されているかチェック
-                        if (cell.IsMerged())
-                        {
-                            var range = cell.MergedRange();
-                            int rowCount = range.RowCount();      // 縦に何セル分か
-                            int columnCount = range.ColumnCount(); // 横に何セル分か（G4とH4なら「2」になる）
-
-                            // 結合範囲内の「自分以外のセル」をすべてスキップリストに登録する
-                            foreach (var rangeCell in range.Cells())
-                            {
-                                if (rangeCell.Address.ToString() != cellAddress)
-                                {
-                                    skippedCells.Add(rangeCell.Address.ToString());
-                                }
-                            }
-
-                            // HTML用の属性を組み立てる
-                            if (columnCount > 1) mergeAttributes += $" colspan='{columnCount}'";
-                            if (rowCount > 1) mergeAttributes += $" rowspan='{rowCount}'";
-                        }
-
-                        // HTMLの出力（組み立てたmergeAttributesをタグに埋め込む）
-                        if (isFirstRow)
-                        {
-                            html.Append($"<th{mergeAttributes}>{displayValue}</th>");
-                        }
-                        else
-                        {
-                            string cellClass = cell.Value.IsNumber ? "class='text-right'" : "class='text-left'";
-                            html.Append($"<td {cellClass}{mergeAttributes}>{displayValue}</td>");
-                        }
-                    }
-                    html.Append("</tr>");
-                    isFirstRow = false;
-                }
+                CustomMessageBox.Show(successMessage, successTitle, MessageBoxButton.OK, MessageBoxImage.Information);
             }
-
-            html.Append("</table></body></html>");
-            return html.ToString();
+            else if (!isSuccess)
+            {
+                CustomMessageBox.Show(errorMessage.Replace("{0}", errorText), errorTitle, MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
     }
 }

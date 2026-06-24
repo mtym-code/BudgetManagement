@@ -4,9 +4,9 @@ using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Text.Json;
 using System.Threading.Tasks;
 
-// 🌟 ViewModelからアクセスできるように、Modelsとして一番外側に出しました
 namespace BudgetManagement.Models
 {
     public class MonthlyBudgetData
@@ -35,15 +35,21 @@ namespace BudgetManagement.Repositories
     // =========================================================
     public class DepartmentBudgetRepository
     {
+        /// <summary>
+        /// 部門別経費予算の全件データを取得します（外部SQLファイルを使用）。
+        /// </summary>
         public async Task<IEnumerable<DepartmentBudget>> GetAllAsync(IDbConnection conn)
         {
             var sql = SqlLoader.Load("DepartmentBudget/GetAll.sql");
+
+            LogHelper.Debug($"[SQL Execution - GetAllAsync]\n{sql}");
+
             return await conn.QueryAsync<DepartmentBudget>(sql);
         }
 
-        // =========================================================
-        // ① 年度テキストボックス変更時に会社コードと名称を取得
-        // =========================================================
+        /// <summary>
+        /// 指定された年度に該当する会社情報を取得します。
+        /// </summary>
         public async Task<IEnumerable<Company>> GetCompaniesByYearAsync(IDbConnection conn, string year)
         {
             string sql = @"
@@ -61,12 +67,15 @@ namespace BudgetManagement.Repositories
                 ORDER BY
                     s.company_code;";
 
-            return await conn.QueryAsync<Company>(sql, new { Year = year });
+            var param = new { Year = year };
+            LogHelper.Debug($"[SQL Execution - GetCompaniesByYearAsync]\n{sql}\nParameters: {JsonSerializer.Serialize(param)}");
+
+            return await conn.QueryAsync<Company>(sql, param);
         }
 
-        // =========================================================
-        // ② 年度テキストボックス変更時に課コードと名称を取得
-        // =========================================================
+        /// <summary>
+        /// 指定された年度と会社コードに紐づく、予算入力対象の課（部門）リストを取得します。
+        /// </summary>
         public async Task<IEnumerable<SectionInfo>> GetSectionsAsync(IDbConnection conn, string year, string companyCode)
         {
             string sql = @"
@@ -86,43 +95,40 @@ namespace BudgetManagement.Repositories
                 ORDER BY
                     s.section_code;";
 
-            return await conn.QueryAsync<SectionInfo>(sql, new { Year = year, CompanyCode = companyCode });
+            var param = new { Year = year, CompanyCode = companyCode };
+            LogHelper.Debug($"[SQL Execution - GetSectionsAsync]\n{sql}\nParameters: {JsonSerializer.Serialize(param)}");
+
+            return await conn.QueryAsync<SectionInfo>(sql, param);
         }
 
-        // =========================================================
-        // ③ 課のコンボボックス確定時に管理入力完了フラグを取得
-        // =========================================================
+        /// <summary>
+        /// 指定された課（部門）の予算入力完了（確定）状態を取得します。
+        /// （画面330の管理完了フラグ、または画面360の担当完了フラグのいずれかが有効か判定）
+        /// </summary>
         public async Task<bool> GetManagementInputFlagsAsync(IDbConnection conn, string year, string companyCode, string sectionCode)
         {
             string sql = @"
                 SELECT
-                    u.mgmt_input_complete_flag
+                    u.staff_input_complete_flag
                 FROM
                     ym_unyou u
                 WHERE
                     u.input_screen = '330'
                     AND u.fiscal_year = @Year
                     AND u.company_code = @CompanyCode
-                    AND u.section_code = @SectionCode
-                    AND u.mgmt_input_complete_flag = true
-                UNION ALL
-                SELECT
-                    u.staff_input_complete_flag
-                FROM
-                    ym_unyou u
-                WHERE
-                    u.input_screen = '360'
-                    AND u.fiscal_year = @Year
-                    AND u.company_code = @CompanyCode
-                    AND u.staff_input_complete_flag = true;";
+                    AND u.section_code = @SectionCode";
 
-            var result = await conn.QueryFirstOrDefaultAsync<bool?>(sql, new { Year = year, CompanyCode = companyCode, SectionCode = sectionCode });
+
+            var param = new { Year = year, CompanyCode = companyCode, SectionCode = sectionCode };
+            LogHelper.Debug($"[SQL Execution - GetManagementInputFlagsAsync]\n{sql}\nParameters: {JsonSerializer.Serialize(param)}");
+
+            var result = await conn.QueryFirstOrDefaultAsync<bool?>(sql, param);
             return result ?? false;
         }
 
-        // =========================================================
-        // ④ Excel出力ボタン押下時に、予算データを取得
-        // =========================================================
+        /// <summary>
+        /// 指定された部門の月別経費予算データを科目・細目ごとに月展開して集計取得します。
+        /// </summary>
         public async Task<IEnumerable<MonthlyBudgetData>> GetBudgetDataForExcelAsync(IDbConnection conn, string year, string companyCode, string sectionCode)
         {
             string sql = @"
@@ -152,16 +158,19 @@ namespace BudgetManagement.Repositories
             sub_account_code;
     ";
 
-            return await conn.QueryAsync<MonthlyBudgetData>(sql, new { Year = year, SectionCode = sectionCode });
+            var param = new { Year = year, SectionCode = sectionCode };
+            LogHelper.Debug($"[SQL Execution - GetBudgetDataForExcelAsync]\n{sql}\nParameters: {JsonSerializer.Serialize(param)}");
+
+            return await conn.QueryAsync<MonthlyBudgetData>(sql, param);
         }
 
 
         /// <summary>
         /// 部門別経費予算データのUPSERT（登録・更新）を行います。
+        /// （同一キーが存在する場合は金額等の情報を更新します）
         /// </summary>
         public async Task<int> UpsertAsync(IDbConnection conn, dynamic param)
         {
-            // C#コード内に直接SQLを定義
             string sql = @"
                 INSERT INTO YT_YOSAN ( 
                   data_type, fiscal_year, mgmt_level, org_code, brand_code, 
@@ -190,12 +199,14 @@ namespace BudgetManagement.Repositories
                   updated_by = @UpdatedBy,
                   updated_at = CURRENT_TIMESTAMP;";
 
+            LogHelper.Debug($"[SQL Execution - UpsertAsync]\nParameters: {JsonSerializer.Serialize((object)param)}");
+
             return await conn.ExecuteAsync(sql, (object)param);
         }
 
-        // =========================================================
-        // ⑤ 担当入力完了フラグを登録する（UPSERT）
-        // =========================================================
+        /// <summary>
+        /// 運用管理テーブルに対して、担当入力完了フラグを登録・更新（UPSERT）します。
+        /// </summary>
         public async Task UpsertStaffInputStatusAsync(IDbConnection conn, string year, string companyCode, string sectionCode, string staffHandlerCode, string deleteFlag, string createdBy, DateTime createdAt, string updatedBy, DateTime updatedAt)
         {
             string sql = @"
@@ -220,12 +231,15 @@ namespace BudgetManagement.Repositories
                     updated_by                = EXCLUDED.updated_by,
                     updated_at                = EXCLUDED.updated_at;";
 
-            await conn.ExecuteAsync(sql, new { Year = year, CompanyCode = companyCode, SectionCode = sectionCode, StaffHandlerCode = staffHandlerCode, DeleteFlag = deleteFlag, CreatedBy = createdBy, CreatedAt = createdAt, UpdatedBy = updatedBy, UpdatedAt = updatedAt });
+            var param = new { Year = year, CompanyCode = companyCode, SectionCode = sectionCode, StaffHandlerCode = staffHandlerCode, DeleteFlag = deleteFlag, CreatedBy = createdBy, CreatedAt = createdAt, UpdatedBy = updatedBy, UpdatedAt = updatedAt };
+            LogHelper.Debug($"[SQL Execution - UpsertStaffInputStatusAsync]\n{sql}\nParameters: {JsonSerializer.Serialize(param)}");
+
+            await conn.ExecuteAsync(sql, param);
         }
 
-        // =========================================================
-        // ⑥ 予算データをupdateした場合、担当入力完了フラグを更新する。
-        // =========================================================
+        /// <summary>
+        /// 運用管理テーブルの既存レコードに対して、担当入力完了フラグを更新（UPDATE）します。
+        /// </summary>
         public async Task UpdateStaffInputStatusAsync(IDbConnection conn, string staffHandlerCode, string updatedBy, DateTime updatedAt, string year, string companyCode, string sectionCode)
         {
             string sql = @"
@@ -244,7 +258,10 @@ namespace BudgetManagement.Repositories
                     AND staff_code   = '99999999'
                     AND target_month = 99;";
 
-            await conn.ExecuteAsync(sql, new { StaffHandlerCode = staffHandlerCode, UpdatedBy = updatedBy, UpdatedAt = updatedAt, Year = year, CompanyCode = companyCode, SectionCode = sectionCode });
+            var param = new { StaffHandlerCode = staffHandlerCode, UpdatedBy = updatedBy, UpdatedAt = updatedAt, Year = year, CompanyCode = companyCode, SectionCode = sectionCode };
+            LogHelper.Debug($"[SQL Execution - UpdateStaffInputStatusAsync]\n{sql}\nParameters: {JsonSerializer.Serialize(param)}");
+
+            await conn.ExecuteAsync(sql, param);
         }
     }
 }

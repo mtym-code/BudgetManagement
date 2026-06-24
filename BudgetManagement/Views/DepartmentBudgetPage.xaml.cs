@@ -15,18 +15,19 @@ namespace BudgetManagement.Views
         {
             InitializeComponent();
 
-            // 変数 vm で受け取るように少し変更します
             var vm = App.ServiceProvider.GetRequiredService<DepartmentBudgetViewModel>();
             this.DataContext = vm;
 
-            // ★追加: ViewModelのイベントをキャッチする設定
+            // ViewModelのイベントをキャッチする設定
             vm.HtmlRenderRequested += ViewModel_HtmlRenderRequested;
+            // ★追加: DB検索側のイベントもキャッチする
+            vm.DbHtmlRenderRequested += ViewModel_DbHtmlRenderRequested;
 
-            // ★追加: 画面が開かれたときにWebView2の初期設定を開始する
             InitializeWebViewAsync();
+
+            // ※LoadingPopupを廃止したため、Popupの位置調整（UpdatePopupPosition）の処理は削除しました
         }
 
-        // 🌟 ① 入力制限 ＆ フリーズバグの完全回避
         private void SectionComboBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             var comboBox = sender as ComboBox;
@@ -37,29 +38,21 @@ namespace BudgetManagement.Views
 
             var vm = this.DataContext as DepartmentBudgetViewModel;
 
-            // 入力された文字が完全な課の名前（コード：名称）ではなくなった時
             if (vm != null && !vm.IsValidSectionName(comboBox.Text))
             {
-                // 内部の選択状態をリセット
                 if (comboBox.SelectedIndex != -1)
                 {
                     comboBox.SelectedIndex = -1;
                 }
 
-                // 💡 【最大の解決策：リフレッシュ機構】💡
-                // ドロップダウンが開いたまま裏側のリストデータが更新されると、WPFがフリーズします。
-                // お客様が発見された「一度閉じれば直る」という挙動を利用し、
-                // 文字が削除（変更）された時は、プログラム側で一瞬だけドロップダウンを強制的に閉じます。
                 if (comboBox.IsDropDownOpen)
                 {
                     comboBox.IsDropDownOpen = false;
                 }
             }
 
-            // 削除操作のときは5文字制限をスルーする
             if (!e.Changes.Any(c => c.AddedLength > 0)) return;
 
-            // 5文字制限の処理
             if (comboBox.Text.Length > 5)
             {
                 if (vm != null && vm.IsValidSectionName(comboBox.Text)) return;
@@ -70,21 +63,17 @@ namespace BudgetManagement.Views
             }
         }
 
-        // 🌟 ② 自動でリストを開く（閉じたリストもここで再び開かれます）
         private void SectionComboBox_PreviewKeyUp(object sender, KeyEventArgs e)
         {
             var comboBox = sender as ComboBox;
             if (comboBox == null || !comboBox.IsEditable) return;
 
-            // 矢印キーやEnterなどは無視
             if (e.Key == Key.Up || e.Key == Key.Down || e.Key == Key.Left || e.Key == Key.Right ||
                 e.Key == Key.Enter || e.Key == Key.Tab || e.Key == Key.Escape) return;
 
             var textBox = comboBox.Template.FindName("PART_EditableTextBox", comboBox) as TextBox;
             if (textBox != null && textBox.IsFocused)
             {
-                // 文字が入っていてドロップダウンが閉じていれば開く
-                // ※上記のTextChangedで一瞬閉じられた場合も、キーを離した瞬間にここで再び綺麗に開きます！
                 if (!string.IsNullOrEmpty(textBox.Text) && !comboBox.IsDropDownOpen)
                 {
                     comboBox.IsDropDownOpen = true;
@@ -92,7 +81,6 @@ namespace BudgetManagement.Views
             }
         }
 
-        // 🌟 ③ 全選択バグを解除
         private void SectionComboBox_DropDownOpened(object sender, EventArgs e)
         {
             var comboBox = sender as ComboBox;
@@ -111,18 +99,45 @@ namespace BudgetManagement.Views
                 }, DispatcherPriority.Input);
             }
         }
+
         private async void InitializeWebViewAsync()
         {
-            // WebView2のエンジンを準備します (必須処理)
+            // ★修正: Excelプレビュー用とDB検索用の両方のエンジンを準備する
             await PreviewWebView.EnsureCoreWebView2Async(null);
+            await SearchPreviewWebView.EnsureCoreWebView2Async(null);
         }
 
-        private void ViewModel_HtmlRenderRequested(object? sender, string htmlContent)
+        // =========================================================
+        // Excel取り込みプレビュー用の処理
+        // =========================================================
+        private async void ViewModel_HtmlRenderRequested(object? sender, string htmlContent)
         {
-            // ViewModelからHTMLが送られてきたら、WebView2に表示します
-            if (PreviewWebView != null && PreviewWebView.CoreWebView2 != null)
+            if (PreviewWebView != null)
             {
-                PreviewWebView.NavigateToString(htmlContent);
+                // ★修正：WebView2の準備がまだなら、ここで準備完了を待つ
+                await PreviewWebView.EnsureCoreWebView2Async(null);
+
+                if (string.IsNullOrEmpty(htmlContent))
+                    PreviewWebView.NavigateToString("<html><body></body></html>");
+                else
+                    PreviewWebView.NavigateToString(htmlContent);
+            }
+        }
+
+        // =========================================================
+        // DB検索プレビュー用の処理
+        // =========================================================
+        private async void ViewModel_DbHtmlRenderRequested(object? sender, string htmlContent)
+        {
+            if (SearchPreviewWebView != null)
+            {
+                // ★修正：WebView2の準備がまだなら、ここで準備完了を待つ
+                await SearchPreviewWebView.EnsureCoreWebView2Async(null);
+
+                if (string.IsNullOrEmpty(htmlContent))
+                    SearchPreviewWebView.NavigateToString("<html><body></body></html>");
+                else
+                    SearchPreviewWebView.NavigateToString(htmlContent);
             }
         }
 
@@ -132,8 +147,13 @@ namespace BudgetManagement.Views
             if (this.DataContext is DepartmentBudgetViewModel vm)
             {
                 vm.HtmlRenderRequested -= ViewModel_HtmlRenderRequested;
+                // ★追加: DB検索用のイベントも解除する
+                vm.DbHtmlRenderRequested -= ViewModel_DbHtmlRenderRequested;
             }
+
             PreviewWebView?.Dispose();
+            // ★追加: DB検索用のWebView2も破棄する
+            SearchPreviewWebView?.Dispose();
         }
     }
 }

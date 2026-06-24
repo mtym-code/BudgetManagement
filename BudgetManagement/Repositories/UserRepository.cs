@@ -9,6 +9,15 @@ namespace BudgetManagement.Repositories
 {
     public class UserRepository
     {
+        public UserRepository()
+        {
+            // =========================================================
+            // ★新規追加：データベースの「operation_type(スネークケース)」を
+            // C#の「OperationType(パスカルケース)」に自動で紐付けるための設定
+            // =========================================================
+            DefaultTypeMap.MatchNamesWithUnderscores = true;
+        }
+
         public async Task<IEnumerable<User>> GetAllAsync(IDbConnection conn)
         {
             var sql = SqlLoader.Load("User/GetAll.sql");

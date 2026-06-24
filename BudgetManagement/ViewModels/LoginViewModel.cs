@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using System;
 using System.Threading.Tasks;
 using System.Windows;
+using BudgetManagement.Common; // ★追加: SessionManagerを使うため
 
 namespace BudgetManagement.ViewModels
 {
@@ -41,10 +42,19 @@ namespace BudgetManagement.ViewModels
 
             try
             {
-                var isAuthenticated = await _userService.AuthenticateAsync(Username, Password);
+                // ★修正：認証してユーザー情報（User）を受け取る
+                var user = await _userService.AuthenticateAsync(Username, Password);
 
-                if (isAuthenticated)
+                if (user != null)
                 {
+                    // =======================================================
+                    // ★追加：ログイン成功時に SessionManager に情報を記憶させる
+                    // ※プロパティ名（UserId, OperationType）は実際の User モデルに合わせてください
+                    // =======================================================
+                    SessionManager.UserId = user.Name ?? string.Empty;
+                    // ★修正：大文字から、小文字＋アンダースコアの名前に変更
+                    SessionManager.OperationType = user.Role ?? string.Empty;
+
                     LoginSucceeded?.Invoke();
                 }
                 else

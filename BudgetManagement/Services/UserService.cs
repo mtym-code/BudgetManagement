@@ -17,16 +17,16 @@ namespace BudgetManagement.Services
 
         public async Task<IEnumerable<User>> GetUsersAsync()
         {
-            using var conn = DbConnectionFactory.Create();
+            using var conn = await DbConnectionFactory.CreateAndOpenAsync();
             return await _repo.GetAllAsync(conn);
         }
 
-        // 【新規追加】DBに接続して認証を行う
-        public async Task<bool> AuthenticateAsync(string username, string password)
+        // ★修正：bool ではなく User（ユーザー情報）を返すように変更
+        public async Task<User?> AuthenticateAsync(string username, string password)
         {
-            using var conn = DbConnectionFactory.Create();
+            using var conn = await DbConnectionFactory.CreateAndOpenAsync();
             var user = await _repo.GetUserByCredentialsAsync(conn, username, password);
-            return user != null;
+            return user;
         }
     }
 }

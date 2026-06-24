@@ -1,0 +1,183 @@
+﻿<Page x:Class="BudgetManagement.Views.BudgetOperationMasterPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+      Background="White"
+      Title="予算運用マスタメンテ">
+
+    <Page.Resources>
+        <Style x:Key="FilterRadioButtonStyle" TargetType="RadioButton">
+            <Setter Property="FontSize" Value="15"/>
+            <Setter Property="Padding" Value="16,6"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Foreground" Value="#4B5563"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="4" Margin="0,0,8,0" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter Property="Background" Value="#EBF5FF"/>
+                                <Setter Property="BorderBrush" Value="#2563EB"/>
+                                <Setter Property="Foreground" Value="#1E3A8A"/>
+                                <Setter Property="FontWeight" Value="Bold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Page.Resources>
+
+    <Grid x:Name="MainRoot" Margin="24" IsEnabled="{Binding IsNotLoading}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="0,0,0,24">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Grid.Column="0" Text="予算運用マスタメンテ" FontSize="24" FontWeight="Bold" Foreground="#111827"/>
+
+            <Button Grid.Column="1" Content="更新" Width="120" Height="40" Cursor="Hand"
+                    Background="#10B981" Foreground="White" BorderThickness="0" FontWeight="Bold" FontSize="15"
+                    Command="{Binding UpdateCommand}" IsEnabled="{Binding IsUpdateEnabled}">
+                <Button.Resources>
+                    <Style TargetType="Border">
+                        <Setter Property="CornerRadius" Value="4"/>
+                    </Style>
+                </Button.Resources>
+            </Button>
+        </Grid>
+
+        <Border Grid.Row="1" BorderBrush="#D1D5DB" BorderThickness="1" Background="White" Padding="24" Margin="0,0,0,24">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8">
+                        <TextBlock Text="入力画面" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="15" Foreground="#4B5563"/>
+                        <TextBlock Text="*" Foreground="Red" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="15"/>
+                        <ComboBox Width="200" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
+                                  ItemsSource="{Binding InputScreens}" SelectedItem="{Binding SelectedInputScreen}" DisplayMemberPath="DisplayName"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8">
+                        <TextBlock Text="年度" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="15" Foreground="#4B5563"/>
+                        <TextBlock Text="*" Foreground="Red" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="15"/>
+                        <TextBox Width="80" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB" MaxLength="4" 
+                                 Text="{Binding Year, UpdateSourceTrigger=PropertyChanged}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8">
+                        <TextBlock Text="会社" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="15" Foreground="#4B5563"/>
+                        <TextBlock Text="*" Foreground="Red" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="15"/>
+                        <ComboBox Width="180" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
+                                  ItemsSource="{Binding Companies}" SelectedItem="{Binding SelectedCompany}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding NameCode}" />
+                                        <TextBlock Text="：" />
+                                        <TextBlock Text="{Binding AbbreviationName}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8" IsEnabled="{Binding IsDepartmentEnabled}">
+                        <TextBlock Text="部" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="15" Foreground="#4B5563"/>
+                        <ComboBox Width="180" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
+                                  ItemsSource="{Binding Departments}" SelectedItem="{Binding SelectedDepartment}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding NameCode}" />
+                                        <TextBlock Text="：" />
+                                        <TextBlock Text="{Binding AbbreviationName}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8" IsEnabled="{Binding IsSectionEnabled}">
+                        <TextBlock Text="課" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="15" Foreground="#4B5563"/>
+                        <ComboBox Width="180" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
+                                  ItemsSource="{Binding Sections}" SelectedItem="{Binding SelectedSection}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding NameCode}" />
+                                        <TextBlock Text="：" />
+                                        <TextBlock Text="{Binding AbbreviationName}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8" IsEnabled="{Binding IsMonthEnabled}">
+                        <TextBlock Text="月" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="15" Foreground="#4B5563"/>
+                        <ComboBox Width="80" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
+                                  ItemsSource="{Binding Months}" SelectedItem="{Binding SelectedMonth}"/>
+                    </StackPanel>
+                </WrapPanel>
+
+                <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,40,8">
+                        <TextBlock Text="入力完了（担当）" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="15" Foreground="#4B5563"/>
+                        <RadioButton Content="全て" IsChecked="{Binding InputStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=All}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="入力完" IsChecked="{Binding InputStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Done}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="未完了" IsChecked="{Binding InputStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=NotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" Margin="0,0,40,8">
+                        <TextBlock Text="送信" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="15" Foreground="#4B5563"/>
+                        <RadioButton Content="全て" IsChecked="{Binding SendStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=All}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="送信済" IsChecked="{Binding SendStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=Done}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                        <RadioButton Content="未完了" IsChecked="{Binding SendStatusFilter, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=NotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                    </StackPanel>
+                </WrapPanel>
+
+                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Content="検索" Width="100" Height="36" Cursor="Hand"
+                            Background="#2563EB" Foreground="White" BorderThickness="0" FontWeight="Bold" FontSize="15"
+                            Command="{Binding SearchCommand}">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </Button.Resources>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <DataGrid Grid.Row="2" ItemsSource="{Binding OperationItems}" AutoGenerateColumns="False" 
+                  CanUserAddRows="False" HeadersVisibility="Column" Background="White" BorderBrush="#D1D5DB"
+                  RowHeight="36" ColumnHeaderHeight="40" FontSize="14" AlternatingRowBackground="#F9FAFB">
+        </DataGrid>
+
+        <Popup IsOpen="{Binding IsLoading}" PlacementTarget="{Binding ElementName=MainRoot}" Placement="Center" AllowsTransparency="True">
+        </Popup>
+    </Grid>
+</Page>

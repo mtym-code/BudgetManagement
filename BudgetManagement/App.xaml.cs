@@ -35,18 +35,30 @@ namespace BudgetManagement
 
             // Repository
             services.AddTransient<UserRepository>();
-            // 👇 ここに新設したRepositoryを登録
             services.AddTransient<DepartmentBudgetRepository>();
+            // 👇 追加：経費営業外見通し用 Repository
+            services.AddTransient<BudgetManagement.Repositories.ExpenseNonOperatingForecastRepository>();
 
             // Service
             services.AddTransient<UserService>();
             services.AddTransient<DepartmentBudgetService>();
-            services.AddTransient<DepartmentBudgetImportService>(); // 追加
+            services.AddTransient<DepartmentBudgetImportService>();
+            
+            // 👇 追加：経費営業外見通し用 Service群
+            services.AddTransient<BudgetManagement.Services.ExpenseNonOperatingForecastService>();
+            services.AddTransient<BudgetManagement.Services.ExpenseNonOperatingForecastExcelService>();
+            services.AddTransient<BudgetManagement.Services.ExpenseNonOperatingForecastHtmlService>();
+            services.AddTransient<BudgetManagement.Services.ExpenseNonOperatingForecastImportService>();
 
             // ViewModel
             services.AddTransient<SampleViewModel>();
             services.AddTransient<LoginViewModel>();
             services.AddTransient<DepartmentBudgetViewModel>();
+            // 👇 追加：経費営業外見通し用 ViewModel
+            services.AddTransient<BudgetManagement.ViewModels.ExpenseNonOperatingForecastViewModel>();
+            
+            services.AddTransient<DepartmentBudgetExcelService>();
+            services.AddTransient<DepartmentBudgetHtmlService>();
 
             ServiceProvider = services.BuildServiceProvider();
         }
