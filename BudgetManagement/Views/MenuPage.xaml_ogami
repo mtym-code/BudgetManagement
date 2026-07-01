@@ -1,0 +1,553 @@
+﻿<Page x:Class="BudgetManagement.Views.MenuPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:fa="clr-namespace:FontAwesome.Sharp;assembly=FontAwesome.Sharp"
+      Background="#EEF2FF">
+
+    <Page.Resources>
+
+        <!-- 色 -->
+        <SolidColorBrush x:Key="TextMainBrush" Color="#111827"/>
+        <SolidColorBrush x:Key="TextSubBrush" Color="#6B7280"/>
+        <SolidColorBrush x:Key="BorderBrushLight" Color="#E5E7EB"/>
+        <SolidColorBrush x:Key="BlueBrush" Color="#4A7DFF"/>
+        <SolidColorBrush x:Key="PurpleBrush" Color="#6B63E6"/>
+        <SolidColorBrush x:Key="GreenBrush" Color="#36C2A0"/>
+        <SolidColorBrush x:Key="OrangeBrush" Color="#F08A00"/>
+
+        <!-- ヘッダー内メニューボタン -->
+        <Style x:Key="HeaderMenuButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="MinWidth" Value="126"/>
+            <Setter Property="Margin" Value="4,0,0,0"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="8">
+
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#F3F4FF"/>
+                                <Setter TargetName="Root" Property="BorderBrush" Value="#E0E7FF"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#E9ECFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ドロップダウン内のメニュー項目 -->
+        <Style x:Key="DropdownMenuItemStyle" TargetType="Button">
+            <Setter Property="Height" Value="38"/>
+            <Setter Property="MinWidth" Value="210"/>
+            <Setter Property="Padding" Value="12,0"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Root"
+                                Background="{TemplateBinding Background}"
+                                CornerRadius="6">
+
+                            <ContentPresenter HorizontalAlignment="Stretch"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#F3F4FF"/>
+                            </Trigger>
+
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Root" Property="Background" Value="#E9ECFF"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="58"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ヘッダー -->
+        <Border Grid.Row="0"
+                Height="58"
+                Background="White"
+                BorderBrush="#E5E7EB"
+                BorderThickness="0,0,0,1">
+
+            <Grid Margin="24,0,20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- 左：システム名 + メニュー -->
+                <StackPanel Orientation="Horizontal"
+                            VerticalAlignment="Center">
+
+                    <Border Width="30"
+                            Height="30"
+                            CornerRadius="5"
+                            Background="#F8FAFC"
+                            BorderBrush="#E5E7EB"
+                            BorderThickness="1">
+                        <fa:IconBlock Icon="ChartColumn"
+                                      FontSize="19"
+                                      Foreground="{StaticResource BlueBrush}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                    </Border>
+
+                    <TextBlock Text="予算システム"
+                               FontSize="16"
+                               FontWeight="Bold"
+                               Foreground="{StaticResource TextMainBrush}"
+                               VerticalAlignment="Center"
+                               Margin="12,0,0,0"/>
+
+                    <!-- 予算入力 / メンテナンス -->
+                    <StackPanel Orientation="Horizontal"
+                                VerticalAlignment="Center"
+                                Margin="28,0,0,0">
+
+                        <!-- 予算入力ドロップダウン -->
+                        <Grid>
+                            <Button x:Name="BudgetInputButton"
+                                    Style="{StaticResource HeaderMenuButtonStyle}"
+                                    Click="BudgetInputButton_Click">
+
+                                <StackPanel Orientation="Horizontal"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+
+                                    <TextBlock Text="予算入力"
+                                               FontSize="14"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource TextMainBrush}"
+                                               VerticalAlignment="Center"/>
+
+                                    <fa:IconBlock Icon="ChevronDown"
+                                                  FontSize="10"
+                                                  Foreground="#6B7280"
+                                                  VerticalAlignment="Center"
+                                                  Margin="7,1,0,0"/>
+                                </StackPanel>
+                            </Button>
+
+
+                            <!-- 予算入力リスト -->
+                            <Popup x:Name="BudgetInputPopup"
+                                           PlacementTarget="{Binding ElementName=BudgetInputButton}"
+                                           Placement="Bottom"
+                                           HorizontalOffset="0"
+                                           VerticalOffset="8"
+                                           StaysOpen="False"
+                                           AllowsTransparency="True"
+                                           PopupAnimation="Fade">
+
+                                <Border Width="360"
+                                        MaxHeight="560"
+                                        Background="White"
+                                        CornerRadius="12"
+                                        BorderBrush="#E5E7EB"
+                                        BorderThickness="1"
+                                        Padding="8">
+
+                                    <Border.Effect>
+                                        <DropShadowEffect Color="#000000"
+                                                                  BlurRadius="18"
+                                                                  ShadowDepth="4"
+                                                                  Opacity="0.16"/>
+                                    </Border.Effect>
+
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+
+                                        <StackPanel>
+
+                                            <!-- 長期予算 -->
+                                            <TextBlock Text="長期予算"
+                                                       FontSize="12"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource BlueBrush}"
+                                                       Margin="10,6,0,8"/>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="Building"
+                                                                FontSize="16"
+                                                                Foreground="{StaticResource PurpleBrush}"
+                                                                Width="22"
+                                                                VerticalAlignment="Center"/>
+                                                    <TextBlock Text="部門経費予算"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="FileCsv"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource GreenBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="ユーザーCSVインポート"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="Users"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource PurpleBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="社内売上仕入"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="ChartColumn"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource BlueBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="課別営業予算"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="Handshake"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource GreenBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="得意先別営業予算"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="BagShopping"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource OrangeBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="ショップ別経費"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="Truck"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource PurpleBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="配賦関連入力"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <!-- 区切り線 -->
+                                            <Border Height="1"
+                                                    Background="#E5E7EB"
+                                                    Margin="8,10,8,8"/>
+
+                                            <!-- 見通し予算 -->
+                                            <TextBlock Text="見通し予算"
+                                                       FontSize="12"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource GreenBrush}"
+                                                       Margin="10,0,0,8"/>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="Building"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource GreenBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="社内売上仕入"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="ChartColumn"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource GreenBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="課別営業予算"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="Calculator"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource GreenBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="経費・営業外"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <!-- 区切り線 -->
+                                            <Border Height="1"
+                                                    Background="#E5E7EB"
+                                                    Margin="8,10,8,8"/>
+
+                                            <!-- 照会・その他 -->
+                                            <TextBlock Text="照会・その他"
+                                                       FontSize="12"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource OrangeBrush}"
+                                                       Margin="10,0,0,8"/>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="MagnifyingGlass"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource OrangeBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="照会"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="Link"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource OrangeBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="課別見通し連携起動"
+                                                                FontSize="15"
+                                                                FontWeight="SemiBold"
+                                                                Foreground="{StaticResource TextMainBrush}"
+                                                                Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="FileLines"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource OrangeBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="社内売上作成（長期）起動"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                            <Button Style="{StaticResource DropdownMenuItemStyle}">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <fa:IconBlock Icon="FileLines"
+                                                                  FontSize="16"
+                                                                  Foreground="{StaticResource OrangeBrush}"
+                                                                  Width="22"
+                                                                  VerticalAlignment="Center"/>
+                                                    <TextBlock Text="社内売上作成（見通し）起動"
+                                                               FontSize="15"
+                                                               FontWeight="SemiBold"
+                                                               Foreground="{StaticResource TextMainBrush}"
+                                                               Margin="10,0,0,0"/>
+                                                </StackPanel>
+                                            </Button>
+
+                                        </StackPanel>
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+
+                        <!-- メンテナンス -->
+                        <Button Style="{StaticResource HeaderMenuButtonStyle}"
+                                Margin="8,0,0,0">
+
+                            <StackPanel Orientation="Horizontal"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+
+                                <TextBlock Text="メンテナンス"
+                                           FontSize="14"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextMainBrush}"
+                                           VerticalAlignment="Center"/>
+
+                                <fa:IconBlock Icon="ChevronDown"
+                                              FontSize="10"
+                                              Foreground="#6B7280"
+                                              VerticalAlignment="Center"
+                                              Margin="7,1,0,0"/>
+                            </StackPanel>
+                        </Button>
+
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- 右：ユーザー情報 -->
+                <StackPanel Grid.Column="1"
+                            Orientation="Horizontal"
+                            VerticalAlignment="Center">
+
+                    <Border Width="28"
+                            Height="28"
+                            CornerRadius="14"
+                            Background="#E5E7EB"
+                            Margin="0,0,8,0">
+                        <fa:IconBlock Icon="User"
+                                      FontSize="14"
+                                      Foreground="#94A3B8"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"/>
+                    </Border>
+
+                    <StackPanel VerticalAlignment="Center"
+                                Margin="0,0,12,0">
+                        <TextBlock Text="五反田 一郎 さん"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextMainBrush}"/>
+                        <TextBlock Text="ユーザーID：109999"
+                                   FontSize="10"
+                                   Foreground="{StaticResource TextSubBrush}"/>
+                    </StackPanel>
+
+                    <fa:IconBlock Icon="ChevronDown"
+                                  FontSize="10"
+                                  Foreground="#111827"
+                                  VerticalAlignment="Center"
+                                  Margin="0,0,18,0"/>
+
+                    <Border Width="1"
+                            Height="28"
+                            Background="#E5E7EB"
+                            Margin="0,0,14,0"/>
+
+                    <Button Width="86"
+                            Height="34"
+                            Background="White"
+                            BorderBrush="#D1D5DB"
+                            BorderThickness="1"
+                            Cursor="Hand">
+
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}"
+                                        BorderBrush="{TemplateBinding BorderBrush}"
+                                        BorderThickness="{TemplateBinding BorderThickness}"
+                                        CornerRadius="4">
+
+                                    <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center">
+
+                                        <fa:IconBlock Icon="RightFromBracket"
+                                                      FontSize="13"
+                                                      Foreground="#374151"
+                                                      Margin="0,0,6,0"/>
+
+                                        <TextBlock Text="ログアウト"
+                                                   FontSize="12"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="#111827"/>
+                                    </StackPanel>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- メイン表示領域 -->
+        <Border Grid.Row="1"
+                Background="White"
+                CornerRadius="20"
+                ClipToBounds="True">
+
+            <Frame x:Name="MainFrame"
+                   NavigationUIVisibility="Hidden"/>
+        </Border>
+    </Grid>
+</Page>

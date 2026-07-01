@@ -76,5 +76,14 @@ namespace BudgetManagement.Views
             var page = App.ServiceProvider.GetRequiredService<BudgetOperationMasterPage>();
             MainFrame.Navigate(page);
         }
+        // 👇 新規追加：ショップ別経費リンククリック時
+        private void ShopExpenseBudgetLink_Click(object sender, MouseButtonEventArgs e)
+        {
+            // ドロップダウンを閉じる
+            NavBudgetPopup.IsOpen = false;
+
+            // 中央のカードの中身を ショップ経費予算画面 に差し替える
+            MainFrame.Navigate(new ShopExpenseBudgetPage());
+        }
     }
 }

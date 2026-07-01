@@ -16,4 +16,64 @@
         <Setter Property="Foreground" Value="{StaticResource PrimaryBrush}"/>
     </Style>
 
+    <Style x:Key="MenuCardStyle"
+
+           TargetType="Button">
+
+        <Setter Property="Width"
+
+                Value="160"/>
+
+        <Setter Property="Height"
+
+                Value="110"/>
+
+        <Setter Property="Margin"
+
+                Value="10"/>
+
+        <Setter Property="FontSize"
+
+                Value="15"/>
+
+        <Setter Property="Background"
+
+                Value="White"/>
+
+        <Setter Property="BorderBrush"
+
+                Value="#E5E7EB"/>
+
+        <Setter Property="BorderThickness"
+
+                Value="1"/>
+
+        <Setter Property="Template">
+
+            <Setter.Value>
+
+                <ControlTemplate TargetType="Button">
+
+                    <Border CornerRadius="8"
+
+                            Background="{TemplateBinding Background}"
+
+                            BorderBrush="{TemplateBinding BorderBrush}"
+
+                            BorderThickness="{TemplateBinding BorderThickness}">
+
+                        <ContentPresenter HorizontalAlignment="Center"
+
+                                          VerticalAlignment="Center"/>
+
+                    </Border>
+
+                </ControlTemplate>
+
+            </Setter.Value>
+
+        </Setter>
+
+    </Style>
+
 </ResourceDictionary>

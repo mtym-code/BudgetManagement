@@ -138,7 +138,7 @@
                     <TextBlock Text="課別営業予算" Style="{StaticResource MenuTextLink}"/>
                     <TextBlock Text="人件費取り込み" Style="{StaticResource MenuTextLink}"/>
                     <TextBlock Text="得意先別営業予算" Style="{StaticResource MenuTextLink}"/>
-                    <TextBlock Text="ショップ別経費" Style="{StaticResource MenuTextLink}"/>
+                    <TextBlock Text="ショップ別経費" Style="{StaticResource MenuTextLink}" MouseLeftButtonDown="ShopExpenseBudgetLink_Click"/>
                     <TextBlock Text="配賦関連入力" Style="{StaticResource MenuTextLink}"/>
 
                     <Border Height="1" Background="#E5E7EB" Margin="0,4"/>

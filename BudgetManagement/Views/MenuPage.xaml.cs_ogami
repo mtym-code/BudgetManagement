@@ -1,0 +1,23 @@
+﻿using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
+
+namespace BudgetManagement.Views
+{
+    public partial class MenuPage : Page
+    {
+        public MenuPage()
+        {
+            InitializeComponent();
+
+            // ⭕【新規追加】起動時は「メインメニュー画面（MainMenuPage）」をカード内に表示する
+            MainFrame.Navigate(new MainMenuPage());
+        }
+
+        private void BudgetInputButton_Click(object sender, RoutedEventArgs e)
+        {
+            BudgetInputPopup.IsOpen = !BudgetInputPopup.IsOpen;
+        }
+
+    }
+}

@@ -16,16 +16,12 @@ namespace BudgetManagement.ViewModels
         // (タイトル, メッセージ本文, アイコンの種類) を渡します
         public event Action<string, string, MessageBoxImage>? ShowMessage;
 
-        // TODO 開発用暫定
         [ObservableProperty]
-        // private string username = string.Empty;
-        private string username = "900017";
-
-        // TODO 開発用暫定
+        private string username = string.Empty;
+        
         [ObservableProperty]
-        // private string password = string.Empty;
-        private string password = "900017";
-
+        private string password = string.Empty;
+        
         public LoginViewModel(UserService userService)
         {
             _userService = userService;
@@ -33,6 +29,9 @@ namespace BudgetManagement.ViewModels
 
         public async Task LoginAsync()
         {
+            //TODO 開発用の暫定
+            username = "900017";
+            password = "900017";
             if (string.IsNullOrEmpty(Username) || string.IsNullOrEmpty(Password))
             {
                 // ⭕ イベントを発火して画面側に処理を委譲
@@ -51,7 +50,7 @@ namespace BudgetManagement.ViewModels
                     // ★追加：ログイン成功時に SessionManager に情報を記憶させる
                     // ※プロパティ名（UserId, OperationType）は実際の User モデルに合わせてください
                     // =======================================================
-                    SessionManager.UserId = user.Name ?? string.Empty;
+                    SessionManager.UserId = Username;
                     // ★修正：大文字から、小文字＋アンダースコアの名前に変更
                     SessionManager.OperationType = user.Role ?? string.Empty;
 

@@ -1,0 +1,19 @@
+﻿using BudgetManagement.Views;
+using FontAwesome.Sharp;
+using System.Windows;
+
+namespace BudgetManagement
+{
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        public MainWindow()
+        {
+            InitializeComponent();
+            IconChar test = IconChar.Home;
+            MainFrame.Navigate(new Login());
+        }
+    }
+}

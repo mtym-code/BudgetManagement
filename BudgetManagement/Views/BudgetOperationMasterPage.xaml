@@ -5,38 +5,6 @@
       Background="White"
       Title="予算運用マスタメンテ">
 
-    <Page.Resources>
-        <Style x:Key="FilterRadioButtonStyle" TargetType="RadioButton">
-            <Setter Property="FontSize" Value="15"/>
-            <Setter Property="Padding" Value="16,6"/>
-            <Setter Property="Background" Value="White"/>
-            <Setter Property="BorderBrush" Value="#D1D5DB"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="Foreground" Value="#4B5563"/>
-            <Setter Property="Cursor" Value="Hand"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}" 
-                                BorderThickness="{TemplateBinding BorderThickness}" 
-                                CornerRadius="4" Margin="0,0,8,0" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter Property="Background" Value="#EBF5FF"/>
-                                <Setter Property="BorderBrush" Value="#2563EB"/>
-                                <Setter Property="Foreground" Value="#1E3A8A"/>
-                                <Setter Property="FontWeight" Value="Bold"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </Page.Resources>
-
     <Grid x:Name="MainRoot" Margin="24" IsEnabled="{Binding IsNotLoading}">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -68,17 +36,9 @@
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,16">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8">
-                        <TextBlock Text="入力画面" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="15" Foreground="#4B5563"/>
-                        <TextBlock Text="*" Foreground="Red" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="15"/>
-                        <ComboBox Width="200" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
-                                  ItemsSource="{Binding InputScreens}" SelectedItem="{Binding SelectedInputScreen}" DisplayMemberPath="DisplayName"/>
-                    </StackPanel>
-
                     <StackPanel Orientation="Horizontal" Margin="0,0,24,8">
                         <TextBlock Text="年度" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="15" Foreground="#4B5563"/>
                         <TextBlock Text="*" Foreground="Red" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="15"/>
@@ -103,38 +63,6 @@
                         </ComboBox>
                     </StackPanel>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8" IsEnabled="{Binding IsDepartmentEnabled}">
-                        <TextBlock Text="部" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="15" Foreground="#4B5563"/>
-                        <ComboBox Width="180" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
-                                  ItemsSource="{Binding Departments}" SelectedItem="{Binding SelectedDepartment}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding NameCode}" />
-                                        <TextBlock Text="：" />
-                                        <TextBlock Text="{Binding AbbreviationName}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8" IsEnabled="{Binding IsSectionEnabled}">
-                        <TextBlock Text="課" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="15" Foreground="#4B5563"/>
-                        <ComboBox Width="180" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
-                                  ItemsSource="{Binding Sections}" SelectedItem="{Binding SelectedSection}">
-                            <ComboBox.ItemTemplate>
-                                <DataTemplate>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding NameCode}" />
-                                        <TextBlock Text="：" />
-                                        <TextBlock Text="{Binding AbbreviationName}" />
-                                    </StackPanel>
-                                </DataTemplate>
-                            </ComboBox.ItemTemplate>
-                        </ComboBox>
-                    </StackPanel>
-
                     <StackPanel Orientation="Horizontal" Margin="0,0,24,8" IsEnabled="{Binding IsMonthEnabled}">
                         <TextBlock Text="月" VerticalAlignment="Center" Margin="0,0,12,0" FontSize="15" Foreground="#4B5563"/>
                         <ComboBox Width="80" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
@@ -142,44 +70,47 @@
                     </StackPanel>
                 </WrapPanel>
 
-                <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,16">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,40,8">
-                        <TextBlock Text="入力完了（担当）" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="15" Foreground="#4B5563"/>
-                        <RadioButton Content="全て" IsChecked="{Binding IsInputFilterAll}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="入力完" IsChecked="{Binding IsInputFilterDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="未完了" IsChecked="{Binding IsInputFilterNotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                    </StackPanel>
-
-                    <StackPanel Orientation="Horizontal" Margin="0,0,40,8">
-                        <TextBlock Text="送信" VerticalAlignment="Center" Margin="0,0,16,0" FontSize="15" Foreground="#4B5563"/>
-                        <RadioButton Content="全て" IsChecked="{Binding IsSendFilterAll}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="送信済" IsChecked="{Binding IsSendFilterDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
-                        <RadioButton Content="未完了" IsChecked="{Binding IsSendFilterNotDone}" Style="{StaticResource FilterRadioButtonStyle}"/>
+                <WrapPanel Grid.Row="1" Orientation="Horizontal" Margin="0">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,24,8">
+                        <TextBlock Text="対象予算" VerticalAlignment="Center" Margin="0,0,4,0" FontSize="15" Foreground="#4B5563"/>
+                        <TextBlock Text="*" Foreground="Red" VerticalAlignment="Center" Margin="0,0,8,0" FontSize="15"/>
+                        <ComboBox Width="200" Height="32" FontSize="15" VerticalContentAlignment="Center" BorderBrush="#D1D5DB"
+                                  ItemsSource="{Binding InputScreens}" SelectedItem="{Binding SelectedInputScreen}" DisplayMemberPath="DisplayName"/>
                     </StackPanel>
                 </WrapPanel>
 
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <Button Content="検索" Width="100" Height="36" Cursor="Hand"
-                            Background="#2563EB" Foreground="White" BorderThickness="0" FontWeight="Bold" FontSize="15"
-                            Command="{Binding SearchCommand}">
-                        <Button.Resources>
-                            <Style TargetType="Border">
-                                <Setter Property="CornerRadius" Value="4"/>
-                            </Style>
-                        </Button.Resources>
-                    </Button>
-                </StackPanel>
             </Grid>
         </Border>
 
         <DataGrid Grid.Row="2" ItemsSource="{Binding OperationItems}" AutoGenerateColumns="False" 
                   CanUserAddRows="False" HeadersVisibility="Column" Background="White" BorderBrush="#D1D5DB"
-                  RowHeight="36" ColumnHeaderHeight="40" FontSize="14" AlternatingRowBackground="#F9FAFB">
+                  RowHeight="28" ColumnHeaderHeight="48" FontSize="14" AlternatingRowBackground="#F9FAFB">
+
+            <DataGrid.ColumnHeaderStyle>
+                <Style TargetType="DataGridColumnHeader">
+                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                </Style>
+            </DataGrid.ColumnHeaderStyle>
+
             <DataGrid.Columns>
-                <DataGridTextColumn Header="組織コード" Binding="{Binding OrgCode}" IsReadOnly="True" Width="100"/>
-                <DataGridTextColumn Header="組織名" Binding="{Binding OrgName}" IsReadOnly="True" Width="200"/>
+                <DataGridTextColumn Header="コード" Binding="{Binding OrgCode}" IsReadOnly="True" Width="70*">
+                    <DataGridTextColumn.ElementStyle>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                            <Setter Property="VerticalAlignment" Value="Center"/>
+                        </Style>
+                    </DataGridTextColumn.ElementStyle>
+                </DataGridTextColumn>
 
-                <DataGridCheckBoxColumn Header="入力完了（担当）" Binding="{Binding IsStaffInputCompleted, UpdateSourceTrigger=PropertyChanged}" Width="120">
+                <DataGridTextColumn Header="名称" Binding="{Binding OrgName}" IsReadOnly="True" Width="200*"/>
+
+                <DataGridCheckBoxColumn Binding="{Binding IsStaffInputCompleted, UpdateSourceTrigger=PropertyChanged}" Width="80*">
+                    <DataGridCheckBoxColumn.Header>
+                        <TextBlock TextAlignment="Center" Margin="0,0,0,2">
+                            <Run Text="担当" Foreground="#6B7280" FontSize="12"/><LineBreak/>
+                            <Run Text="入力完了" FontWeight="Bold"/>
+                        </TextBlock>
+                    </DataGridCheckBoxColumn.Header>
                     <DataGridCheckBoxColumn.ElementStyle>
                         <Style TargetType="CheckBox">
                             <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -187,9 +118,23 @@
                         </Style>
                     </DataGridCheckBoxColumn.ElementStyle>
                 </DataGridCheckBoxColumn>
-                <DataGridTextColumn Header="担当者名" Binding="{Binding StaffHandlerName}" IsReadOnly="True" Width="150"/>
 
-                <DataGridCheckBoxColumn Header="送信フラグ" Binding="{Binding IsSendFlag, UpdateSourceTrigger=PropertyChanged}" Width="100">
+                <DataGridTextColumn Binding="{Binding StaffHandlerName}" IsReadOnly="True" Width="120*">
+                    <DataGridTextColumn.Header>
+                        <TextBlock TextAlignment="Center" Margin="0,0,0,2">
+                            <Run Text="担当" Foreground="#6B7280" FontSize="12"/><LineBreak/>
+                            <Run Text="氏名" FontWeight="Bold"/>
+                        </TextBlock>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+
+                <DataGridCheckBoxColumn Binding="{Binding IsSendFlag, UpdateSourceTrigger=PropertyChanged}" Width="80*">
+                    <DataGridCheckBoxColumn.Header>
+                        <TextBlock TextAlignment="Center" Margin="0,0,0,2">
+                            <Run Text="送信" Foreground="#6B7280" FontSize="12"/><LineBreak/>
+                            <Run Text="フラグ" FontWeight="Bold"/>
+                        </TextBlock>
+                    </DataGridCheckBoxColumn.Header>
                     <DataGridCheckBoxColumn.ElementStyle>
                         <Style TargetType="CheckBox">
                             <Setter Property="HorizontalAlignment" Value="Center"/>
@@ -197,17 +142,24 @@
                         </Style>
                     </DataGridCheckBoxColumn.ElementStyle>
                 </DataGridCheckBoxColumn>
-                <DataGridTextColumn Header="送信者名" Binding="{Binding SendHandlerName}" IsReadOnly="True" Width="150"/>
 
-                <DataGridCheckBoxColumn Header="送信済" Binding="{Binding IsSendDone}" IsReadOnly="True" Width="80">
-                    <DataGridCheckBoxColumn.ElementStyle>
-                        <Style TargetType="CheckBox">
-                            <Setter Property="HorizontalAlignment" Value="Center"/>
-                            <Setter Property="VerticalAlignment" Value="Center"/>
-                        </Style>
-                    </DataGridCheckBoxColumn.ElementStyle>
-                </DataGridCheckBoxColumn>
-                <DataGridTextColumn Header="前回送信日時" Binding="{Binding LastSendDateTime}" IsReadOnly="True" Width="180"/>
+                <DataGridTextColumn Binding="{Binding SendHandlerName}" IsReadOnly="True" Width="120*">
+                    <DataGridTextColumn.Header>
+                        <TextBlock TextAlignment="Center" Margin="0,0,0,2">
+                            <Run Text="送信" Foreground="#6B7280" FontSize="12"/><LineBreak/>
+                            <Run Text="氏名" FontWeight="Bold"/>
+                        </TextBlock>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+
+                <DataGridTextColumn Binding="{Binding LastSendDateTime}" IsReadOnly="True" Width="180*">
+                    <DataGridTextColumn.Header>
+                        <TextBlock TextAlignment="Center" Margin="0,0,0,2">
+                            <Run Text="送信" Foreground="#6B7280" FontSize="12"/><LineBreak/>
+                            <Run Text="前回送信日時" FontWeight="Bold"/>
+                        </TextBlock>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
             </DataGrid.Columns>
         </DataGrid>
 

@@ -80,7 +80,7 @@
                             <Button Style="{StaticResource MenuButton}" Content="課別営業予算"/>
                             <Button Style="{StaticResource MenuButton}" Content="人件費取り込み"/>
                             <Button Style="{StaticResource MenuButton}" Content="得意先別営業予算"/>
-                            <Button Style="{StaticResource MenuButton}" Content="ショップ別経費"/>
+                            <Button Style="{StaticResource MenuButton}" Content="ショップ別経費" Click="ShopExpenseBudget_Click"/>
                             <Button Style="{StaticResource MenuButton}" Content="配賦関連入力"/>
                         </WrapPanel>
 

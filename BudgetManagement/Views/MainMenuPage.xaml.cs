@@ -57,5 +57,10 @@ namespace BudgetManagement.Views
             var page = App.ServiceProvider.GetRequiredService<BudgetOperationMasterPage>();
             this.NavigationService.Navigate(page);
         }
+        // 👇 新規追加：ショップ経費予算画面へ遷移
+        private void ShopExpenseBudget_Click(object sender, RoutedEventArgs e)
+        {
+            this.NavigationService.Navigate(new ShopExpenseBudgetPage());
+        }
     }
 }
